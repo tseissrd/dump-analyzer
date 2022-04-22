@@ -1,0 +1,18 @@
+[
+  {
+    "title": "генерация простых чисел",
+    "value": "PRIME"
+  },
+  {
+    "title": "копирование массивов",
+    "value": "ARRAY_COPY"
+  },
+  {
+    "title": "заполнение кучи",
+    "value": "CRASH_HEAP"
+  },
+  {
+    "title": "блокировка тредов",
+    "value": "DEAD_LOCK"
+  }
+]
