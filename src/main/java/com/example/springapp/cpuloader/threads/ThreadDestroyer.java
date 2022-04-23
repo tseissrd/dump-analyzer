@@ -58,7 +58,7 @@ public class ThreadDestroyer {
     }),
     DEAD_LOCK(() -> {
       Random random = new Random(Instant.now().getEpochSecond());
-      final int numberOfThreads = random.nextInt(1, 9);
+      final int numberOfThreads = random.nextInt(8) + 2;
       Thread[] threads = new Thread[numberOfThreads];
       //final List<Object> objects = new ArrayList<>();
       final List<Lock> resources = new ArrayList<>();
