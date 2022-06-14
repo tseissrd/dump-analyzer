@@ -35,6 +35,9 @@ public class PhdMediumObjectRecord extends PhdObjectRecord {
     
     byte tagByte = tag.toByte();
     
+    if (BitsValue.valueOf(tagByte, (byte)2,(byte)0, true) != (byte)1)
+      throw new IncorrectFormatException("First two bits of a medium object record have to be 01");
+    
     byte numberOfReferences = BitsValue.valueOf(tagByte, (byte)3, (byte)2, true);
 //    if ((numberOfReferences < 4) || (numberOfReferences > 7))
 //      throw new IncorrectFormatException("Medium object record has to contain 4-7 references, got " + numberOfReferences);
@@ -44,7 +47,7 @@ public class PhdMediumObjectRecord extends PhdObjectRecord {
     Class gapType = null;
     
     try {
-      gapType = FormatCodes.formatForCode(BitsValue.valueOf(tagByte, (byte)3, (byte)2, true));
+      gapType = FormatCodes.formatForCode(BitsValue.valueOf(tagByte, (byte)1, (byte)2, false));
       if ((!gapType.equals(Byte.TYPE)) && (!gapType.equals(Short.TYPE)))
         throw new IncorrectFormatException("Gap type is " + gapType.getSimpleName() + " for class PhdMediumObjectRecord.");
     } catch (UnknownTypeCodeException ex) {

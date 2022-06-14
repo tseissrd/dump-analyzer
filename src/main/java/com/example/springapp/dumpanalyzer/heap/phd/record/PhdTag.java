@@ -23,10 +23,7 @@ public class PhdTag {
     System.out.println("resolving tag: " + tag + " (0x" + Long.toHexString(tag) + ")");
     
     if (tag == 3) {
-      System.out.println("end");
-      if (true)
-        throw new UnknownTagException(Byte.toString(tag));
-      return null;
+      System.out.println("got tag 3 (EOF)");
     } else if ((tag & 0x80) == 0x80) {
       // short object record
       
@@ -52,24 +49,26 @@ public class PhdTag {
     } else if (tag == 5) {
       // object array record
       
-      throw new Error("end");
+//      if (true)
+//        throw new UnknownTagException(Byte.toString(tag));
+      return PhdObjectArrayRecord.class;
       
     } else if (tag == 6) {
       // class record
       
-      if (true)
-        throw new UnknownTagException(Byte.toString(tag));
+//      if (true)
+//        throw new UnknownTagException(Byte.toString(tag));
       return PhdClassRecord.class;
       
     } else if (tag == 7) {
       // long primitive array record
       
-      throw new Error("end");
+      return PhdLongPrimitiveArrayRecord.class;
       
     } else if (tag == 8) {
       // object array record (rev)
       
-      throw new Error("end");
+      return PhdRevisedObjectArrayRecord.class;
       
     }
     

@@ -137,6 +137,12 @@ public class PhdInputStream {
   
   protected void checkNextObject() throws IOException, UnknownTagException {
     nextRecordTag = new PhdTag(file.readByte());
+    
+    if (nextRecordTag.toByte() == (byte)3) {
+      moreObjects = false;
+      return;
+    }
+    
     nextRecordType = nextRecordTag.toRecordType();
     
     if (nextRecordType == null)
@@ -168,6 +174,7 @@ public class PhdInputStream {
         + Long.toHexString(file.getFilePointer())
         + ")"
     );
+    
     checkNextObject();
     return record;
   }
@@ -206,6 +213,10 @@ public class PhdInputStream {
   
   public String readUTF() throws IOException {
     return file.readUTF();
+  }
+  
+  public Class<? extends Number> getWordType() {
+    return this.wordType;
   }
   
 }

@@ -47,7 +47,7 @@ public class PhdDump {
     PhdRecord record = null;
     
     while (input.hasMoreObjects()) {
-    // for (int i = 0; i < 50; i += 1) {
+    // for (int i = 0; i < 10; i += 1) {
       try {
         record = input.nextRecord();
         records.add(record);

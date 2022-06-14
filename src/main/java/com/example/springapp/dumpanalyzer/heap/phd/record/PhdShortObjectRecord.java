@@ -34,6 +34,9 @@ public class PhdShortObjectRecord extends PhdObjectRecord {
     
     byte tagByte = tag.toByte();
     
+    if (BitsValue.valueOf(tagByte, (byte)1, (byte)0, true) != 1)
+      throw new IncorrectFormatException("First bit in a short object record must be set");
+      
     byte classCacheIndex = BitsValue.valueOf(tagByte, (byte)2, (byte)1, true);
     byte numberOfReferences = BitsValue.valueOf(tagByte, (byte)2, (byte)3, true);
     
@@ -50,7 +53,7 @@ public class PhdShortObjectRecord extends PhdObjectRecord {
       if ((!gapType.equals(Byte.TYPE)) && (!gapType.equals(Short.TYPE)))
         throw new IncorrectFormatException("Gap type is " + gapType.getSimpleName() + " for class PhdShortObjectRecord.");
     } catch (UnknownTypeCodeException ex) {
-      Logger.getLogger(PhdShortObjectRecord.class.getName()).log(Level.SEVERE, null, ex);
+      throw new IncorrectFormatException(ex);
     }
     
     Class referenceType = null;
@@ -58,7 +61,7 @@ public class PhdShortObjectRecord extends PhdObjectRecord {
     try {
       referenceType = FormatCodes.formatForCode(BitsValue.valueOf(tagByte, (byte)2, (byte)0, false));
     } catch (UnknownTypeCodeException ex) {
-      Logger.getLogger(PhdShortObjectRecord.class.getName()).log(Level.SEVERE, null, ex);
+      throw new IncorrectFormatException(ex);
     }
     
     Number gap = input.readValue(gapType);
@@ -76,9 +79,11 @@ public class PhdShortObjectRecord extends PhdObjectRecord {
     }
     
     System.out.println("reference format: " + referenceType.getName());
-    System.out.println("reference array class: " + record.referencesArray.getClass().getName());
+    if (numberOfReferences > 0)
+      System.out.println("reference array class: " + record.referencesArray.getClass().getName());
     System.out.println("reference array length: " + numberOfReferences);
-    System.out.println("reference array component class: " + record.referencesArray.getClass().componentType().getName());
+    // System.out.println("reference array component class: " + record.referencesArray.getClass().componentType().getName());
+    System.out.println("reference array component class: " + referenceType.getName());
     System.out.println("class cache index: " + classCacheIndex);
     System.out.println("gap: " + gap);
     System.out.println("");

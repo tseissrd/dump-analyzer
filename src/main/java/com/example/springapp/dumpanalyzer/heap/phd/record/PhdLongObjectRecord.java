@@ -33,6 +33,9 @@ public class PhdLongObjectRecord extends PhdObjectRecord {
   public static PhdLongObjectRecord getFrom(PhdInputStream input, PhdTag tag) throws IOException, IncorrectFormatException {
     PhdLongObjectRecord record = new PhdLongObjectRecord();
     
+    if (tag.toByte() != 4)
+      throw new IncorrectFormatException("Tag value of a long object record has to be 4");
+    
     byte flags = input.readByte();
 
     Class gapType = null;
@@ -69,7 +72,7 @@ public class PhdLongObjectRecord extends PhdObjectRecord {
 
     if (input.objectsHashed())
       hashcode = input.readShort();
-    else if (moved || hashed)
+    else if (moved)
       hashcode = input.readInt();
 
     int numberOfReferences = input.readInt();

@@ -17,36 +17,41 @@ import java.util.logging.Logger;
  *
  * @author Sovereign
  */
-public class PhdPrimitiveArrayRecord extends PhdArrayRecord {
+public class PhdLongPrimitiveArrayRecord extends PhdArrayRecord {
   
   private Class componentType;
   private Number length;
-  private short hashcode;
+  private Number hashcode;
   
-  public static PhdPrimitiveArrayRecord getFrom(PhdInputStream input, PhdTag tag) throws IOException, IncorrectFormatException {
+  public static PhdLongPrimitiveArrayRecord getFrom(PhdInputStream input, PhdTag tag) throws IOException, IncorrectFormatException {
     
-    PhdPrimitiveArrayRecord record = new PhdPrimitiveArrayRecord();
+    PhdLongPrimitiveArrayRecord record = new PhdLongPrimitiveArrayRecord();
     
     byte tagByte = tag.toByte();
     
-    if (BitsValue.valueOf(tagByte, (byte)3, (byte)0, true) != (byte)1)
-      throw new IncorrectFormatException("First three bits of a primitive array record have to be 001");
+    if (tagByte != 7)
+      throw new IncorrectFormatException("Tag value for a long primitive array record has to be 7.");
+    
+    byte flags = input.readByte();
     
     try {
-      record.componentType = typeForCode(BitsValue.valueOf(tagByte, (byte)3, (byte)3, true));
+      record.componentType = typeForCode(BitsValue.valueOf(flags, (byte)3, (byte)0, true));
     } catch (UnknownTypeCodeException ex) {
       throw new IncorrectFormatException(ex);
     }
     
-    byte arrayLengthFormatCode = BitsValue.valueOf(tagByte, (byte)2, (byte)0, false);
+    byte arrayLengthFormatCode = BitsValue.valueOf(flags, (byte)1, (byte)3, true);
+    boolean moved = BitsValue.valueOf(flags, (byte)1, (byte)1, false) == 1;
+    boolean hashed = BitsValue.valueOf(flags, (byte)1, (byte)0, false) == 1;
     
     Class arrayLengthFormat = null; // also gap from previous object
     
-    try {
-      arrayLengthFormat = formatForCode(arrayLengthFormatCode);
-    } catch (UnknownTypeCodeException ex) {
-      throw new IncorrectFormatException(ex);
-    }
+    if (arrayLengthFormatCode == (byte)1)
+      arrayLengthFormat = input.getWordType();
+    else if (arrayLengthFormatCode == (byte)0)
+      arrayLengthFormat = Byte.TYPE;
+    else
+      throw new IncorrectFormatException("Unknown long array length type code: " + arrayLengthFormatCode);
     
     Number gapFromPreviousObject = input.readValue(arrayLengthFormat);
     record.setGap(gapFromPreviousObject);
@@ -57,6 +62,8 @@ public class PhdPrimitiveArrayRecord extends PhdArrayRecord {
     
     if (input.objectsHashed())
       record.hashcode = input.readShort();
+    else if (moved)
+      record.hashcode = input.readInt();
     
     // int instanceSize = input.readInt(); // unsigned
     
@@ -65,7 +72,7 @@ public class PhdPrimitiveArrayRecord extends PhdArrayRecord {
     System.out.println("array length format: " + record.length.getClass().getName());
     System.out.println("array length: " + record.length);
     System.out.println("gap: " + gapFromPreviousObject);
-    if (input.objectsHashed())
+    if (input.objectsHashed() || moved)
       System.out.println(record.hashcode);
     // System.out.println("instance size: " + instanceSize);
     System.out.println("");
@@ -73,7 +80,7 @@ public class PhdPrimitiveArrayRecord extends PhdArrayRecord {
     return record;
   }
   
-  private PhdPrimitiveArrayRecord() {
+  private PhdLongPrimitiveArrayRecord() {
   }
   
 }

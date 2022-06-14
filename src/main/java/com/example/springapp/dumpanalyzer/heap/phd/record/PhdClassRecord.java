@@ -2,6 +2,7 @@
  */
 package com.example.springapp.dumpanalyzer.heap.phd.record;
 
+import com.example.springapp.dumpanalyzer.heap.phd.IncorrectFormatException;
 import com.example.springapp.dumpanalyzer.heap.phd.PhdInputStream;
 import static com.example.springapp.dumpanalyzer.heap.phd.record.FormatCodes.formatForCode;
 import com.example.springapp.dumpanalyzer.util.BitsValue;
@@ -28,8 +29,12 @@ public class PhdClassRecord extends PhdObjectRecord {
   private PhdClassRecord() {
   }
 
-  public static PhdClassRecord getFrom(PhdInputStream input, PhdTag tag) throws IOException {
+  public static PhdClassRecord getFrom(PhdInputStream input, PhdTag tag)
+  throws IOException, IncorrectFormatException {
     PhdClassRecord record = new PhdClassRecord();
+    
+    if (tag.toByte() != (byte)6)
+      throw new IncorrectFormatException("Tag value for a class record has to be 6.");
     
     byte flags = input.readByte();
 
@@ -37,14 +42,14 @@ public class PhdClassRecord extends PhdObjectRecord {
     try {
       gapType = formatForCode(BitsValue.valueOf(flags, (byte)2, (byte)0, true));
     } catch (UnknownTypeCodeException ex) {
-      Logger.getLogger(PhdClassRecord.class.getName()).log(Level.SEVERE, null, ex);
+      throw new IncorrectFormatException(ex);
     }
 
     Class referenceType = null;
     try {
       referenceType = formatForCode(BitsValue.valueOf(flags, (byte)2, (byte)2, true));
     } catch (UnknownTypeCodeException ex) {
-      Logger.getLogger(PhdClassRecord.class.getName()).log(Level.SEVERE, null, ex);
+      throw new IncorrectFormatException(ex);
     }
 
     boolean moved = BitsValue.valueOf(flags, (byte)1, (byte)4, true) == 1;
