@@ -1,4 +1,4 @@
-package com.example.springapp.cpuloader;
+package com.example.springapp.dumpanalyzer;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

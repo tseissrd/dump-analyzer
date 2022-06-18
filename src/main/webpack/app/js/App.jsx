@@ -1,6 +1,8 @@
 import React, {useState, useEffect} from 'react';
 import Settings from './parts/Settings.jsx';
 import Menu from './parts/Menu.jsx';
+import LongMenu from './parts/LongMenu.jsx';
+import Directory from './parts/Directory.jsx';
 import Status from './parts/Status.jsx';
 import settingsData from '../data/settings/entries.json';
 import menuData from '../data/menu/entries.json';
@@ -8,15 +10,54 @@ import menuData from '../data/menu/entries.json';
 export default function App(props) {
   const [status, setStatus] = useState({});
   const [settings, setSettings] = useState({
-    strategy: 'PRIME',
-    threadsNumber: 0
+    type: 'ihs_http_access',
+    file: ''
   });
+  
+  const [files, setFiles] = useState([]);
+  
+  const [viewData, setViewData] = useState({
+    type: 'test',
+    data: ''
+  });
+  
+  async function updateDirectory(option) {
+    console.log(settings.type);
+    console.log(settings);
+    
+    const response = await fetch('list', {
+      method: 'POST',
+      body: option? option : settings.type
+    });
+    
+    setFiles(await response.json());
+  }
+  
+  async function updateView(targetSettings) {
+    const response = await fetch('view', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(
+        targetSettings?
+        targetSettings
+        : settings
+      )
+    });
+    
+    setViewData({
+      type: 'text',
+      data: await response.json()
+    });
+  }
   
   function setOption(option) {
     const newSettings = {
         ...settings
       };
-    newSettings['strategy'] = option;
+    newSettings['type'] = option;
+    updateDirectory(option);
     
     setSettings(newSettings);
   }
@@ -27,27 +68,33 @@ export default function App(props) {
       };
     newSettings[setting] = value;
     
+    if (
+      setting === 'file'
+      &&  newSettings['file'] !== settings['file']
+    )
+      updateView(newSettings);
+    
     setSettings(newSettings);
   }
   
   const useSettings = () => ({setOption, setValue});
   
   async function updateStatus() {
-    const controller = new AbortController();
-    let response;
-    let timeout;
-    
-    try {
-      timeout = setTimeout(controller.abort, 5000);
-
-      response = await fetch('status', {signal: controller.signal});
-      clearTimeout(timeout);
-    } catch (ex) {
-      clearTimeout(timeout);
-      return;
-    }
-    const data = await response.json();
-    setStatus(data);
+//    const controller = new AbortController();
+//    let response;
+//    let timeout;
+//    
+//    try {
+//      timeout = setTimeout(controller.abort, 5000);
+//
+//      response = await fetch('status', {signal: controller.signal});
+//      clearTimeout(timeout);
+//    } catch (ex) {
+//      clearTimeout(timeout);
+//      return;
+//    }
+//    const data = await response.json();
+//    setStatus(data);
   }
   
   async function sendControl(data) {
@@ -70,19 +117,6 @@ export default function App(props) {
   function processStatus(status) {
     const processedStatus = {...status};
     
-    const strategyToString = {
-      PRIME: 'генерация простых чисел',
-      ARRAY_COPY: 'копирование массивов',
-      CRASH_HEAP: 'заполнение кучи',
-      DEAD_LOCK: 'блокировка тредов'
-    };
-    
-    if (!processedStatus.threads)
-      processedStatus.threads = 0;
-    
-    if (processedStatus.strategy)
-      processedStatus.strategy = strategyToString[processedStatus.strategy];
-    
     return processedStatus
   }
   
@@ -93,16 +127,27 @@ export default function App(props) {
       overflowY: 'auto',
       border: 'thick double black'
     };
+    
+  const longMenuStyle = {
+      resize: 'both',
+      width: '1200px',
+      height: '800px',
+      border: 'thick double black',
+      float: 'left',
+      overflow: 'scroll'
+    };
   
   useEffect(() => setInterval(updateStatus, 2000), []);
+  
+  // <Settings style={blockStyle} data={settingsData} useContext={useSettings} />
+  // <Status style={blockStyle} onClick={() => updateStatus()} title='статус приложения' data={processStatus(status)} />
   
   return (
     <div style={{
       display: 'contents'
     }}>
-      <Settings style={blockStyle} data={settingsData} useContext={useSettings} />
       <Menu style={blockStyle} data={menuData} useContext={useSettings} />
-      <Status style={blockStyle} title='настройки' data={processStatus(settings)} applyAction={() => sendControl(settings)} />
-      <Status style={blockStyle} onClick={() => updateStatus()} title='статус приложения' data={processStatus(status)} />
+      <Directory title="файлы" chosen={settings.file} style={blockStyle} data={files} useContext={useSettings} /> 
+      <LongMenu data={viewData} style={longMenuStyle} title='просмотр' />
     </div>);
 }

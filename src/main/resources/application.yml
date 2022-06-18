@@ -5,3 +5,6 @@ logging:
 spring:
   main:
     banner-mode: off
+custom:
+  dumpanalyzer:
+    data-path-base: ./data
