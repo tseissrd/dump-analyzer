@@ -26,7 +26,7 @@ export default function LongMenu({
   
   const tabsStyle = {
     width: '100%',
-    height: '20'
+    height: '100px'
   };
   
   return (<div style={style} {...props} >

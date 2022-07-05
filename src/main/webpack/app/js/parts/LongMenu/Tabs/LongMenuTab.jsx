@@ -17,7 +17,8 @@ export default function Menu({
       width: '98px',
       height: '98px',
       border: 'thin solid black',
-      float: 'left'
+      // float: 'left'
+      display: 'inline-block'
     }} key={num} >
         <button style={{
           width: '98px',

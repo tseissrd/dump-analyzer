@@ -22,7 +22,8 @@ export default function Settings({
       width: '298px',
       height: '98px',
       border: 'thin solid black',
-      float: 'left'
+      // float: 'left'
+      display: 'inline-block'
     }} key={num} >
         <div style={{
           padding: '4px'

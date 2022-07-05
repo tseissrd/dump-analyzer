@@ -121,7 +121,8 @@ export default function App(props) {
   }
   
   const blockStyle = {
-      float: 'left',
+      // float: 'left',
+      display: 'inline-block',
       width: '300px',
       height: '300px',
       overflowY: 'auto',
@@ -129,11 +130,11 @@ export default function App(props) {
     };
     
   const longMenuStyle = {
+      display: 'block',
       resize: 'both',
       width: '1200px',
       height: '800px',
       border: 'thick double black',
-      float: 'left',
       overflow: 'scroll'
     };
   
