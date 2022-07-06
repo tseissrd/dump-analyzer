@@ -85,18 +85,24 @@ public class App {
           
           System.out.println(type + "/" + file);
           
-          String contents = fileManager.view(type + "/" + file);
+          String contents = fileManager.view(file, type);
           
           return ServerResponse.ok()
             .contentType(APPLICATION_JSON)
             .body(contents);
         })
-      .POST("/upload", accept(MULTIPART_FORM_DATA),
+      .PUT("/upload", accept(MULTIPART_FORM_DATA),
         request -> {
           MultiValueMap data = request.multipartData();
           ArrayList nameDataArray = (ArrayList)data.get("name");
           MultiPart nameData = (MultiPart)nameDataArray.get(0);
           String name = new String(nameData.getBytes(), "utf-8");
+          
+          ArrayList typeDataArray = (ArrayList)data.get("type");
+          MultiPart typeData = (MultiPart)typeDataArray.get(0);
+          String type = new String(typeData.getBytes(), "utf-8");
+          
+          System.out.println("name: " + name);
           System.out.println(data.get("file").getClass());
           ArrayList fileDataArray = (ArrayList)data.get("file");
           if (Objects.isNull(fileDataArray))
@@ -114,6 +120,7 @@ public class App {
           System.out.println(fileData.getInputStream());
           fileManager.accept(
             name,
+            type,
             fileData.getInputStream()
           );
           

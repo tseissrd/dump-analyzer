@@ -29,13 +29,17 @@ export default function LongMenu({
     height: '100px'
   };
   
+  const viewStyle = {
+    marginTop: '10px'
+  };
+  
   return (<div style={style} {...props} >
       <div style={{
         padding: '4px'
       }}>
         <h3>{title}</h3>
         <Tabs data={constructTabsData()} style={tabsStyle} />
-        <View data={data} />
+        <View data={data} style={viewStyle} />
       </div>
     </div>);
 }

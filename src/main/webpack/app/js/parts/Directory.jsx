@@ -3,6 +3,7 @@ import React from 'react';
 export default function Directory({
   title,
   data = [],
+  folder,
   chosen,
   useContext = () => ({}),
   style,
@@ -20,17 +21,18 @@ export default function Directory({
   const fileInputUuid = crypto.randomUUID();
   
   function chooseFile() {
-    const fileInputEl = document.getElementById(fileInputUuid);
+    const fileInputEl = document.getElementById(`${fileInputUuid}-file`);
     fileInputEl.click();
   }
   
   async function uploadFile(file) {
     const data = new FormData();
     data.append('name', file.name);
+    data.append('type', folder);
     data.append('file', file);
     
-    await fetch('upload', {
-      method: 'POST',
+    const request = fetch('upload', {
+      method: 'PUT',
       body: data
     });
   }
@@ -43,12 +45,19 @@ export default function Directory({
   }
   
   return (<div style={style} {...props} >
-    <input
-      id={fileInputUuid}
-      style={{display: 'none'}}
-      type='file'
-      onChange={event => uploadFile(event.target.files)}
-    />
+    <form id={`${fileInputUuid}-form`} >
+      <input
+        id={`${fileInputUuid}-file`}
+        style={{display: 'none'}}
+        type='file'
+        onChange={event => {
+          uploadFiles(event.target.files)
+          event.target
+            .parentNode
+            .reset();
+        }}
+      />
+    </form>
     <div style={{padding: '4px'}}>
       <div>
         <h3 style={{

@@ -148,7 +148,13 @@ export default function App(props) {
       display: 'contents'
     }}>
       <Menu style={blockStyle} data={menuData} useContext={useSettings} />
-      <Directory title="файлы" chosen={settings.file} style={blockStyle} data={files} useContext={useSettings} /> 
+      <Directory
+        title="файлы"
+        folder={settings.type}
+        chosen={settings.file}
+        style={blockStyle}
+        data={files}
+        useContext={useSettings} /> 
       <LongMenu data={viewData} style={longMenuStyle} title='просмотр' />
     </div>);
 }

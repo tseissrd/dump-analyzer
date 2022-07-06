@@ -5,6 +5,11 @@ logging:
 spring:
   main:
     banner-mode: off
+  servlet:
+    multipart:
+      max-file-size: 40GB
+      max-request-size: 40GB
+      file-size-threshold: 15MB
 custom:
   dumpanalyzer:
     data-path-base: ./data
