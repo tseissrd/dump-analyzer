@@ -3,12 +3,17 @@
 package com.example.springapp.dumpanalyzer;
 
 import com.example.springapp.dumpanalyzer.data.FileManager;
+import com.example.springapp.dumpanalyzer.data.ProcessOrchestrator;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -29,7 +34,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 public class App {
   
   @Autowired
-  private FileManager fileManager;
+  private ProcessOrchestrator orchestrator;
   
   @Bean
   public RouterFunction<ServerResponse> getRouters() throws InterruptedException {
@@ -68,8 +73,8 @@ public class App {
           return ServerResponse.ok()
             .contentType(APPLICATION_JSON)
             .body(
-                fileManager.list(data)
-              );
+              orchestrator.list(data)
+            );
         })
       .POST("/view", accept(APPLICATION_JSON),
         request -> {
@@ -83,13 +88,13 @@ public class App {
           String type = (String)data.get("type");
           String file = (String)data.get("file");
           
-          System.out.println(type + "/" + file);
-          
-          String contents = fileManager.view(file, type);
+          System.out.println(type + "/out/" + file + ".json");
           
           return ServerResponse.ok()
             .contentType(APPLICATION_JSON)
-            .body(contents);
+            .body(
+              orchestrator.view(file, type)
+            );
         })
       .PUT("/upload", accept(MULTIPART_FORM_DATA),
         request -> {
@@ -118,7 +123,7 @@ public class App {
           // System.out.println(fileName);
           System.out.println(file);
           System.out.println(fileData.getInputStream());
-          fileManager.accept(
+          orchestrator.accept(
             name,
             type,
             fileData.getInputStream()
@@ -126,6 +131,28 @@ public class App {
           
           return ServerResponse.ok()
             .build();
+        })
+      .DELETE("/delete", accept(APPLICATION_JSON),
+        request -> {
+          Map<String, Object> data = request.body(Map.class);
+          System.out.println(data);
+          
+          if (!data.containsKey("type") || !data.containsKey("file"))
+            return ServerResponse.badRequest()
+              .body("Incorrect request body.");
+          
+          String type = (String)data.get("type");
+          String file = (String)data.get("file");
+          
+          System.out.println(type + "/out/" + file + ".json");
+          
+          orchestrator.remove(file, type);
+          
+          return ServerResponse.ok()
+            .contentType(APPLICATION_JSON)
+            .body(
+              Map.of("status", "ok")
+            );
         })
       .build();
   }

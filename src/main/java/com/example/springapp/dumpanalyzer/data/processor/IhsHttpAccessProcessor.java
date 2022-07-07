@@ -4,12 +4,14 @@ package com.example.springapp.dumpanalyzer.data.processor;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,16 +35,30 @@ implements Processor {
   }
 
   @Override
-  public void process(File in, File out) {
+  public void process(InputStream in, OutputStream out) {
     try (BufferedReader reader = new BufferedReader(
-      new FileReader(in)
+      new InputStreamReader(in, Charset.forName("utf-8"))
     )) {
       try (BufferedWriter writer = new BufferedWriter(
-        new FileWriter(out)
+        new OutputStreamWriter(
+          out,
+          Charset.forName("utf-8")
+        )
       )) {
-        String line = reader.readLine();
-        System.out.println(line);
-        writer.append(line);
+        writer.append("{\"out\":\"");
+        
+        String line;
+        
+        while (
+          Objects.nonNull(
+            line = reader.readLine()
+          )
+        ) {
+          System.out.println(line);
+          writer.append(line);
+        }
+        
+        writer.append("\"}");
       }
     } catch (FileNotFoundException ex) {
       Logger.getLogger(IhsHttpAccessProcessor.class.getName()).log(Level.SEVERE, null, ex);
@@ -54,7 +70,7 @@ implements Processor {
   }
 
   @Override
-  public boolean isAccepting(String type) {
+  public boolean accepts(String type) {
     return true;
   }
   

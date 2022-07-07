@@ -3,118 +3,126 @@
 package com.example.springapp.dumpanalyzer.data;
 
 import com.example.springapp.dumpanalyzer.config.AppConfiguration;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
-import java.util.Set;
-import java.util.WeakHashMap;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 
 /**
  *
  * @author Sovereign
  */
-@Configuration
 public class FileManager {
   
   private static final int IO_BUFFER_SIZE = 16384;
   
   private final String pathBase;
-  private final Set<File> filesToProcess;
+  private final FileSystem fs;
   
-  @Autowired
-  private ProcessorManager processorManager;
-  
-  @Autowired
-  public FileManager(AppConfiguration config) {
-    pathBase = config.get("custom.dumpanalyzer.data-path-base");
-    filesToProcess = new HashSet<>();
+  public FileManager(String pathBase) {
+    this.pathBase = pathBase;
+    fs = FileSystems.getDefault();
   }
   
-  public void mkdir(String type) throws IOException {
-    File path = new File(pathBase + "/" + type + "/out");
+  public FileManager(AppConfiguration config) {
+    pathBase = config.get("custom.dumpanalyzer.data-path-base");
+    fs = FileSystems.getDefault();
+  }
+  
+  public void mkdir(String type)
+  throws IOException {
+    Path path = pathFor(type);
     
-    if (path.exists())
+    if (Files.exists(path))
       throw new IOException("Path exists: " + path);
       
-    path.mkdirs();
+    Files.createDirectories(path);
   }
   
   public boolean dirExists(String type) {
-    File path = new File(pathBase + "/" + type);
-    
-    return path.exists();
+    return Files.exists(pathFor(type));
   }
   
-  public String[] list(String type) {
-    File path = new File(pathBase + "/" + type);
+  public boolean fileExists(String file, String type) {
+    return Files.exists(
+      pathFor(file, type)
+    );
+  }
+  
+  private Path pathFor(String file, String type) {
+    return fs.getPath(
+      pathBase,
+      type,
+      file
+    );
+  }
+  
+  private Path pathFor(String type) {
+    return fs.getPath(
+      pathBase,
+      type
+    );
+  }
+  
+  public InputStream getFile(String file, String type)
+  throws IOException {
+    return Files.newInputStream(
+      pathFor(file, type)
+    );
+  }
+  
+  public OutputStream getSink(String file, String type)
+  throws IOException {
+    return Files.newOutputStream(
+      pathFor(file, type)
+    );
+  }
+  
+  public String[] list(String type)
+  throws IOException {
+    Path path = pathFor(type);
     
-    if (!path.exists())
+    if (!Files.exists(path))
       return new String[0];
 
-    System.out.println(path.getAbsolutePath());
+    System.out.println(path.normalize());
 
-    File[] listing = path.listFiles();
-    String[] out = new String[listing.length];
-
-    int numberOfFiles = 0;
+    String[] listing = Files.list(path)
+      .filter(Files::isRegularFile)
+      .map(Path::getFileName)
+      .map(Path::toString)
+      .toArray(String[]::new);
     
-    for (int fileNum = 0; fileNum < out.length; fileNum += 1) {
-      if (listing[fileNum].isFile()) {
-        out[numberOfFiles] = listing[fileNum].getName();
-        numberOfFiles += 1;
-      }
-    }
-    
-    out = Arrays.copyOf(out, numberOfFiles);
-    
-    return out;
+    return listing;
   }
   
   public String view(String file, String type) throws IOException {
-    File path = new File(pathBase + "/" + type + "/" + file);
+    Path path = pathFor(file, type);
     
-    System.out.println(path.getAbsolutePath());
+    System.out.println(path.normalize());
     
-    if (!path.exists())
-      throw new IOException("No such file: " + path.getAbsolutePath());
-    
-    File processedFile = new File(
-      path.getParent()
-      + "/out/"
-      + path.getName()
-      + ".json"
-    );
-    
-    if (!processedFile.exists())
-      try {
-        processorManager.process(path, processedFile, type)
-          .get();
-    } catch (Throwable ex) {
-      throw new RuntimeException(ex);
-    }
+    if (!Files.exists(path))
+      throw new IOException("No such file: " + path);
     
     StringBuilder out = new StringBuilder();
     
     char[] buf = new char[IO_BUFFER_SIZE / 16];
     int read;
     
-    try(FileReader contents = new FileReader(processedFile)) {
+    try(BufferedReader contents = Files.newBufferedReader(
+      path,
+      Charset.forName("utf-8")
+    )) {
       while ((read = contents.read(buf)) > -1)
         out.append(buf, 0, read);
     }
@@ -124,21 +132,32 @@ public class FileManager {
   
   public void accept(String file, String type, InputStream data)
   throws IOException {
-    File path = new File(pathBase + "/" + type + "/" + file);
+    Path path = pathFor(file, type);
     if (!dirExists(type))
       mkdir(type);
     
     byte[] buf = new byte[IO_BUFFER_SIZE];
     int read;
     
-    try (FileOutputStream sink = new FileOutputStream(path)) {
+    try (OutputStream sink = Files.newOutputStream(path)) {
       while ((read = data.read(buf)) > -1)
         sink.write(buf, 0, read);
     }
+  }
+  
+  public void remove(String file, String type) {
+    Path path = pathFor(file, type);
     
-    File processedFilePath = new File(pathBase + "/" + type + "/out/" + file + ".json");
-    
-    processorManager.process(path, processedFilePath, type);
+    if (
+      Files.exists(path)
+      && Files.isRegularFile(path)
+    ) {
+      try {
+        Files.delete(path);
+      } catch (IOException ex) {
+        Logger.getLogger(FileManager.class.getName()).log(Level.SEVERE, null, ex);
+      }
+    }
   }
   
 }

@@ -3,9 +3,10 @@ import React from 'react';
 export default function Directory({
   title,
   data = [],
-  folder,
   chosen,
   useContext = () => ({}),
+  onUpload = () => ({}),
+  onDelete = () => ({}),
   style,
   ...props}) {
     
@@ -25,25 +26,6 @@ export default function Directory({
     fileInputEl.click();
   }
   
-  async function uploadFile(file) {
-    const data = new FormData();
-    data.append('name', file.name);
-    data.append('type', folder);
-    data.append('file', file);
-    
-    const request = fetch('upload', {
-      method: 'PUT',
-      body: data
-    });
-  }
-  
-  async function uploadFiles(files) {
-    console.log(files);
-    for (const file of files) {
-      await uploadFile(file);
-    }
-  }
-  
   return (<div style={style} {...props} >
     <form id={`${fileInputUuid}-form`} >
       <input
@@ -51,7 +33,7 @@ export default function Directory({
         style={{display: 'none'}}
         type='file'
         onChange={event => {
-          uploadFiles(event.target.files)
+          onUpload(event.target.files)
           event.target
             .parentNode
             .reset();
@@ -79,6 +61,7 @@ export default function Directory({
         }}
         onClick={() => {
           console.log('delete');
+          onDelete();
         }} >удалить</button>
       </div>
       {data.map((file, num) => <div style={{

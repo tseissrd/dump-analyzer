@@ -120,6 +120,42 @@ export default function App(props) {
     return processedStatus
   }
   
+  async function uploadFile(file) {
+    const data = new FormData();
+    data.append('name', file.name);
+    data.append('type', settings.type);
+    data.append('file', file);
+    
+    const request = await fetch('upload', {
+      method: 'PUT',
+      body: data
+    });
+  }
+  
+  async function uploadFiles(files) {
+    console.log(files);
+    for (const file of files) {
+      await uploadFile(file);
+    }
+    
+    updateDirectory();
+  }
+  
+  async function deleteFile() {
+    const request = await fetch('delete', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        file: settings.file,
+        type: settings.type
+      })
+    });
+    
+    updateDirectory();
+  }
+  
   const blockStyle = {
       // float: 'left',
       display: 'inline-block',
@@ -150,11 +186,12 @@ export default function App(props) {
       <Menu style={blockStyle} data={menuData} useContext={useSettings} />
       <Directory
         title="файлы"
-        folder={settings.type}
         chosen={settings.file}
         style={blockStyle}
         data={files}
-        useContext={useSettings} /> 
+        useContext={useSettings}
+        onUpload={uploadFiles}
+        onDelete={deleteFile} /> 
       <LongMenu data={viewData} style={longMenuStyle} title='просмотр' />
     </div>);
 }

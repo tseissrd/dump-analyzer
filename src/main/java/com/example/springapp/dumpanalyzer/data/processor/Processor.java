@@ -2,7 +2,8 @@
  */
 package com.example.springapp.dumpanalyzer.data.processor;
 
-import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  *
@@ -10,8 +11,8 @@ import java.io.File;
  */
 public interface Processor {
   
-  public boolean isAccepting(String type);
+  public boolean accepts(String type);
   
-  public void process(File in, File out);
+  public void process(InputStream in, OutputStream out);
   
 }
