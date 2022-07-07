@@ -55,6 +55,11 @@ implements Processor {
           )
         ) {
           System.out.println(line);
+          line = line
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r");
           writer.append(line);
         }
         
