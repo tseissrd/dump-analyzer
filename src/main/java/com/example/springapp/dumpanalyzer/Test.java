@@ -2,13 +2,9 @@
  */
 package com.example.springapp.dumpanalyzer;
 
-import com.example.springapp.dumpanalyzer.heap.phd.IncorrectFormatException;
-import com.example.springapp.dumpanalyzer.heap.phd.PhdDump;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import com.example.springapp.dumpanalyzer.data.json.JsonOutputStream;
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
 
 /**
  *
@@ -17,18 +13,9 @@ import java.util.logging.Logger;
 public class Test {
   
   public static void main(String[] args) throws Throwable {
-    File file = new File("./dump.phd");
-    
-    PhdDump dump;
-    
-    try {
-      dump = new PhdDump(file);
-    } catch (IOException ex) {
-      Logger.getLogger(Test.class.getName()).log(Level.SEVERE, null, ex);
-    } catch (IncorrectFormatException ex) {
-      Logger.getLogger(Test.class.getName()).log(Level.SEVERE, null, ex);
-    }
-    
+    JsonOutputStream jsonOut = new JsonOutputStream(System.out);
+    jsonOut.test_convertObject(123);
+    jsonOut.test_convertObject((double)543.123);
   }
   
 }

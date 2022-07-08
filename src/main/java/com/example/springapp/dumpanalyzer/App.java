@@ -2,23 +2,16 @@
  */
 package com.example.springapp.dumpanalyzer;
 
-import com.example.springapp.dumpanalyzer.data.FileManager;
 import com.example.springapp.dumpanalyzer.data.ProcessOrchestrator;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart;
+import org.eclipse.jetty.http.MultiPartFormInputStream.MultiPart;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.MediaType;
 import static org.springframework.http.MediaType.*;
 import org.springframework.util.MultiValueMap;
 import static org.springframework.web.servlet.function.RequestPredicates.*;
@@ -78,7 +71,7 @@ public class App {
         })
       .POST("/view", accept(APPLICATION_JSON),
         request -> {
-          Map<String, Object> data = request.body(Map.class);
+          Map<String, Object> data = (Map<String, Object>)request.body(Map.class);
           System.out.println(data);
           
           if (!data.containsKey("type") || !data.containsKey("file"))
@@ -134,7 +127,7 @@ public class App {
         })
       .DELETE("/delete", accept(APPLICATION_JSON),
         request -> {
-          Map<String, Object> data = request.body(Map.class);
+          Map<String, Object> data = (Map<String, Object>)request.body(Map.class);
           System.out.println(data);
           
           if (!data.containsKey("type") || !data.containsKey("file"))

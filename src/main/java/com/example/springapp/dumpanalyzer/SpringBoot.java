@@ -1,5 +1,7 @@
 package com.example.springapp.dumpanalyzer;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -14,7 +16,12 @@ public class SpringBoot extends SpringBootServletInitializer {
 	}
 
 	public static void main(String[] args) throws InterruptedException {
-		SpringApplication.run(SpringBoot.class, args);
+    try {
+      Test.main(args);
+      // SpringApplication.run(SpringBoot.class, args);
+    } catch (Throwable ex) {
+      Logger.getLogger(SpringBoot.class.getName()).log(Level.SEVERE, null, ex);
+    }
 	}
 
 }
