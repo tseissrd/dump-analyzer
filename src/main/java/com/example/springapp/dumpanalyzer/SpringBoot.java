@@ -16,12 +16,7 @@ public class SpringBoot extends SpringBootServletInitializer {
 	}
 
 	public static void main(String[] args) throws InterruptedException {
-    try {
-      Test.main(args);
-      // SpringApplication.run(SpringBoot.class, args);
-    } catch (Throwable ex) {
-      Logger.getLogger(SpringBoot.class.getName()).log(Level.SEVERE, null, ex);
-    }
+    SpringApplication.run(SpringBoot.class, args);
 	}
 
 }

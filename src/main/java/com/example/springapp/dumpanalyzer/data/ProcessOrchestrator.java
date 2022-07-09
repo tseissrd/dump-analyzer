@@ -2,6 +2,7 @@
  */
 package com.example.springapp.dumpanalyzer.data;
 
+import com.example.springapp.dumpanalyzer.Test;
 import com.example.springapp.dumpanalyzer.config.AppConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
@@ -88,6 +89,12 @@ public class ProcessOrchestrator {
     };
     
     cleanupThread.start();
+    
+    try {
+      Test.main(new String[0]);
+    } catch (Throwable ex) {
+      Logger.getLogger(ProcessOrchestrator.class.getName()).log(Level.SEVERE, null, ex);
+    }
   }
   
   private boolean isFileManaged(String file, String type) {
