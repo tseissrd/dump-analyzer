@@ -95,8 +95,6 @@ public class FileManager {
     if (!Files.exists(path))
       return new String[0];
 
-    System.out.println(path.normalize());
-
     String[] listing = Files.list(path)
       .filter(Files::isRegularFile)
       .map(Path::getFileName)
@@ -108,9 +106,7 @@ public class FileManager {
   
   public String view(String file, String type) throws IOException {
     Path path = pathFor(file, type);
-    
-    System.out.println(path.normalize());
-    
+        
     if (!Files.exists(path))
       throw new IOException("No such file: " + path);
     

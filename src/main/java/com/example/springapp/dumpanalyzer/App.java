@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.eclipse.jetty.http.MultiPartFormInputStream.MultiPart;
+import org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -71,8 +71,7 @@ public class App {
         })
       .POST("/view", accept(APPLICATION_JSON),
         request -> {
-          Map<String, Object> data = (Map<String, Object>)request.body(Map.class);
-          System.out.println(data);
+          Map data = request.body(Map.class);
           
           if (!data.containsKey("type") || !data.containsKey("file"))
             return ServerResponse.badRequest()
@@ -80,8 +79,6 @@ public class App {
           
           String type = (String)data.get("type");
           String file = (String)data.get("file");
-          
-          System.out.println(type + "/out/" + file + ".json");
           
           return ServerResponse.ok()
             .contentType(APPLICATION_JSON)
@@ -99,23 +96,16 @@ public class App {
           ArrayList typeDataArray = (ArrayList)data.get("type");
           MultiPart typeData = (MultiPart)typeDataArray.get(0);
           String type = new String(typeData.getBytes(), "utf-8");
-          
-          System.out.println("name: " + name);
-          System.out.println(data.get("file").getClass());
+
           ArrayList fileDataArray = (ArrayList)data.get("file");
           if (Objects.isNull(fileDataArray))
             return ServerResponse.badRequest()
               .body("no file");
           
-          System.out.println(name);
-          System.out.println(fileDataArray.size());
-          System.out.println(fileDataArray.get(0).getClass());
           MultiPart fileData = (MultiPart)fileDataArray.get(0);
-          // String fileName = fileData.getSubmittedFileName();
-          File file = fileData.getFile();
-          // System.out.println(fileName);
-          System.out.println(file);
-          System.out.println(fileData.getInputStream());
+          System.out.println(fileDataArray.size());
+          System.out.println(fileData.getSize());
+          
           orchestrator.accept(
             name,
             type,
@@ -127,8 +117,7 @@ public class App {
         })
       .DELETE("/delete", accept(APPLICATION_JSON),
         request -> {
-          Map<String, Object> data = (Map<String, Object>)request.body(Map.class);
-          System.out.println(data);
+          Map data = (Map)request.body(Map.class);
           
           if (!data.containsKey("type") || !data.containsKey("file"))
             return ServerResponse.badRequest()
@@ -136,9 +125,7 @@ public class App {
           
           String type = (String)data.get("type");
           String file = (String)data.get("file");
-          
-          System.out.println(type + "/out/" + file + ".json");
-          
+                    
           orchestrator.remove(file, type);
           
           return ServerResponse.ok()

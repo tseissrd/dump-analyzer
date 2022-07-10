@@ -26,30 +26,30 @@ public class ProcessorManager {
   
   private static final FileSystem fs = FileSystems.getDefault();
   
-  private final FileManager fileManager;
-  
   static {
     processors = new LinkedList<>();
-    processors.add(IhsHttpAccessProcessor.getInstance());
+    processors.add(
+      IhsHttpAccessProcessor.getInstance()
+    );
   }
   
-  public ProcessorManager(FileManager fileManager) {
-    this(fileManager, 10);
+  public ProcessorManager() {
+    this(10);
   }
   
-  public ProcessorManager(FileManager fileManager, int threads) {
+  public ProcessorManager(int threads) {
     executor = Executors.newFixedThreadPool(threads);
-    this.fileManager = fileManager;
   }
   
   public Future<Void> process(final InputStream in, final OutputStream out, String type) {
-    return (Future<Void>) executor.submit(() -> {
+    return executor.submit(() -> {
       for (Processor processor : processors) {
         if (processor.accepts(type)) {
           processor.process(in, out);
-          return;
+          return (Void)null;
         }
       }
+      return (Void)null;
     });
   }
   

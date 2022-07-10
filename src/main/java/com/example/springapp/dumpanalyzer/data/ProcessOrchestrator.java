@@ -45,13 +45,10 @@ public class ProcessOrchestrator {
     
     if (Objects.nonNull(processorThreadsConfig)) {
       processorManager = new ProcessorManager(
-        fileManager,
         Integer.parseInt(processorThreadsConfig)
       );
     } else {
-      processorManager = new ProcessorManager(
-        fileManager
-      );
+      processorManager = new ProcessorManager();
     }
     
     filesInProcessing = new ConcurrentHashMap<>();
@@ -163,7 +160,6 @@ public class ProcessOrchestrator {
   
   public String[] list(String type)
   throws IOException {
-    System.out.println("!!!" + fileManager.list(type).length);
     
     return Arrays.stream(
         fileManager.list(type + "/out")

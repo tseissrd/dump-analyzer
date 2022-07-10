@@ -3,9 +3,11 @@
 package com.example.springapp.dumpanalyzer.data.json;
 
 import java.io.BufferedWriter;
+import java.io.Closeable;
+import java.io.Flushable;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -15,16 +17,24 @@ import static java.util.Objects.requireNonNull;
  *
  * @author Sovereign
  */
-public class JsonOutputStream {
+public class JsonOutputWriter
+implements Closeable, Flushable {
   
   private final BufferedWriter jsonOutput;
   
-  public JsonOutputStream(OutputStream sink) {
+  private int depth;
+  private boolean nextWithComma;
+  
+  public JsonOutputWriter(Writer sink) {
     this.jsonOutput = new BufferedWriter(
-      new OutputStreamWriter(sink)
+      sink
     );
+    
+    depth = 0;
+    nextWithComma = false;
   }
   
+  @SuppressWarnings("unchecked")
   public void write(Object object)
   throws IOException {
     if (Objects.isNull(object))
@@ -47,6 +57,9 @@ public class JsonOutputStream {
     } else if (object instanceof Map) {
       writeMap((Map)object);
       return;
+    } else if (object instanceof List) {
+      writeList((List)object);
+      return;
     } else {
       jsonOutput.write(
         new StringBuilder("\"")
@@ -56,6 +69,38 @@ public class JsonOutputStream {
       );
       return;
     }
+  }
+  
+  private void startArray()
+  throws IOException {
+    jsonOutput.write("[");
+    
+    this.depth += 1;
+    this.nextWithComma = false;
+  }
+  
+  private void endArray()
+  throws IOException {
+    jsonOutput.write("]");
+    
+    this.depth -= 1;
+    
+    if (this.depth <= 0)
+      this.nextWithComma = false;
+    else
+      this.nextWithComma = true;
+  }
+  
+  // TODO
+  private void optionalComma()
+  throws IOException {
+    if (this.nextWithComma)
+      jsonOutput.write(",");
+  }
+  
+  public void writeRaw(String data)
+  throws IOException {
+    jsonOutput.write(data);
   }
   
   public void writeString(String string)
@@ -68,18 +113,21 @@ public class JsonOutputStream {
     );
   }
   
-  private void writeMapEntry(Entry<String, Object> entry)
+  private void writeMapEntry(Entry entry)
   throws IOException {
     jsonOutput.write(
       new StringBuilder("\"")
-        .append(entry.getKey())
+        .append(
+          entry.getKey()
+            .toString()
+        )
         .append("\":")
         .toString()
     );
     write(entry.getValue());
   }
   
-  public void writeMap(Map<String, Object> map)
+  public <T> void writeMap(Map map)
   throws IOException {
     if (Objects.isNull(map))
       return;
@@ -87,15 +135,15 @@ public class JsonOutputStream {
     
     jsonOutput.write("{");
     
-    Entry<String, Object> lastEntry = null;
+    Entry lastEntry = null;
     
-    for (Entry<String, Object> entry : map.entrySet()) {
+    for (Object entry : map.entrySet()) {
       if (Objects.nonNull(lastEntry)) {
         writeMapEntry(lastEntry);
         jsonOutput.write(",");
       }
       
-      lastEntry = entry;
+      lastEntry = (Entry)entry;
     };
     
     writeMapEntry(lastEntry);
@@ -123,13 +171,55 @@ public class JsonOutputStream {
       lastEntry = entry;
     }
     
-    writeString(lastEntry);
+    if (
+      Objects.nonNull(lastEntry)
+    ) {
+      writeString(lastEntry);
+    }
+    
+    jsonOutput.write("]");
+  }
+  
+  public void writeList(List list)
+  throws IOException {
+    requireNonNull(list);
+    
+    if (list.isEmpty())
+      jsonOutput.write("[]");
+    
+    jsonOutput.write("[");
+    
+    Object lastEntry = null;
+    
+    for (Object entry : list) {
+      if (Objects.nonNull(lastEntry)) {
+        write(entry);
+        jsonOutput.write(",");
+      }
+      
+      lastEntry = entry;
+    }
+    
+    if (
+      Objects.nonNull(lastEntry)
+    ) {
+      write(
+        lastEntry.toString()
+      );
+    }
+    
     jsonOutput.write("]");
   }
   
   public void close()
   throws IOException {
     jsonOutput.close();
+  }
+
+  @Override
+  public void flush()
+  throws IOException {
+    jsonOutput.flush();
   }
   
 }

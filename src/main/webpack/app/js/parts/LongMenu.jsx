@@ -1,6 +1,7 @@
-import React from 'react';
+import React, {useState} from 'react';
 import Tabs from './LongMenu/Tabs.jsx';
 import View from './LongMenu/View.jsx';
+import tabsData from '../../data/LongMenu/tabs.js';
 
 export default function LongMenu({
     title,
@@ -11,26 +12,22 @@ export default function LongMenu({
     style,
     ...props}) {
     
-  const {setOption} = useContext();
-    
-  const onClick = value => {
-    setOption(value);
-  };
-  
-  function constructTabsData() {
-    return [
-      {title: 'tab1', action: () => console.log('test')},
-      {title: 'tab2', action: () => console.log('test 2')}
-    ];
-  }
+  // const {setOption} = useContext();
   
   const tabsStyle = {
     width: '100%',
-    height: '100px'
+    height: '110px'
   };
   
   const viewStyle = {
     marginTop: '10px'
+  };
+  
+  const [mode, setMode] = useState("default");
+  
+  const viewData = {
+    mode,
+    ...data
   };
   
   return (<div style={style} {...props} >
@@ -38,8 +35,16 @@ export default function LongMenu({
         padding: '4px'
       }}>
         <h3>{title}</h3>
-        <Tabs data={constructTabsData()} style={tabsStyle} />
-        <View data={data} style={viewStyle} />
+        <Tabs
+          data={tabsData}
+          style={tabsStyle}
+          useContext={() => ({setMode})}
+        />
+        <View
+          data={viewData}
+          style={viewStyle}
+          mode={mode}
+        />
       </div>
     </div>);
 }

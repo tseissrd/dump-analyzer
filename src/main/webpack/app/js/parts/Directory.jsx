@@ -5,19 +5,13 @@ export default function Directory({
   data = [],
   chosen,
   useContext = () => ({}),
+  onChoice = () => ({}),
   onUpload = () => ({}),
   onDelete = () => ({}),
   style,
   ...props}) {
     
   const {setValue} = useContext();
-  
-  const onClick = (value) => {
-    setValue(
-      "file",
-      value
-    );
-  };
   
   const fileInputUuid = crypto.randomUUID();
   
@@ -75,7 +69,7 @@ export default function Directory({
           backgroundColor: chosen === file?
             'gold'
             : 'white'
-        }} onClick={() => onClick(file)}>
+        }} onClick={() => onChoice(file)}>
           {file}
         </button>
       </div>)}

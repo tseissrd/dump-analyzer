@@ -17,8 +17,9 @@ export default function App(props) {
   const [files, setFiles] = useState([]);
   
   const [viewData, setViewData] = useState({
-    type: 'test',
-    data: ''
+    type: 'ihs_http_access',
+    data: '',
+    mode: 'normal'
   });
   
   async function updateDirectory(option) {
@@ -34,20 +35,22 @@ export default function App(props) {
   }
   
   async function updateView(targetSettings) {
+    const usedSettings = targetSettings?
+      targetSettings
+      : settings;
+    
     const response = await fetch('view', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(
-        targetSettings?
-        targetSettings
-        : settings
+        usedSettings
       )
     });
     
     setViewData({
-      type: 'text',
+      type: usedSettings.type,
       data: await response.json()
     });
   }
@@ -120,6 +123,13 @@ export default function App(props) {
     return processedStatus
   }
   
+  function chooseFile(file) {
+    setValue(
+      "file",
+      file
+    );
+  }
+  
   async function uploadFile(file) {
     const data = new FormData();
     data.append('name', file.name);
@@ -190,6 +200,7 @@ export default function App(props) {
         style={blockStyle}
         data={files}
         useContext={useSettings}
+        onChoice={chooseFile}
         onUpload={uploadFiles}
         onDelete={deleteFile} /> 
       <LongMenu data={viewData} style={longMenuStyle} title='просмотр' />
