@@ -4,7 +4,7 @@ import Text from './Views/Text.jsx';
 
 export default function View({
     data = {
-      data: '',
+      data: null,
       type: 'text',
       mode: 'normal'
     },
@@ -19,9 +19,7 @@ export default function View({
   }
   
   const ViewType = resolveType(data.type);
-  
-  console.log(`type is ${data.type}`);
-  
+    
   return (<ViewType
     data={data.data}
     mode={data.mode}

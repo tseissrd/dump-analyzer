@@ -4,7 +4,6 @@ package com.example.springapp.dumpanalyzer.data.processor;
 
 import com.example.springapp.dumpanalyzer.data.json.JsonOutputWriter;
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -14,14 +13,11 @@ import java.nio.charset.Charset;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.Temporal;
-import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import static java.util.Objects.nonNull;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -135,8 +131,211 @@ implements Processor {
     return date;
   }
   
+  private void processCodeByTime(
+    BufferedReader reader,
+    JsonOutputWriter writer
+  )
+  throws IOException {
+    String line;
+        
+    String dateString;
+    String date;
+    short code;
+    String codeString;
+
+    List<String> tableHeaders = new ArrayList<>();
+    List<Map<String, String>> tableRows = new ArrayList<>();
+
+    Map<Short, Long> codes = new HashMap<>();
+
+    String lastDate = null;
+    Map<Short, Long> codesForLastDate = null;
+    
+    tableHeaders.add("time");
+
+    while ((line = reader.readLine()) != null) {
+      Matcher matcher = ACCESS_LOG_REGEXP.matcher(line);
+      matcher.matches();
+      dateString = matcher.group(2);
+      codeString = matcher.group(3);
+      code = Short.parseShort(codeString);
+      
+      if (!tableHeaders.contains(
+        codeString
+      )) {
+        tableHeaders.add(
+          codeString
+        );
+      }
+
+      date = parseDate(dateString)
+        .truncatedTo(
+          ChronoUnit.MINUTES
+        )
+        .toString();
+
+      if (
+        nonNull(lastDate)
+        && (!date.equals(lastDate))
+      ) {
+        Map<String, String> row = new HashMap<>();
+        
+        row.put(
+          "time",
+          lastDate
+        );
+        
+        codesForLastDate.forEach(
+          (codeRecord, countRecord) -> {
+            row.put(
+              codeRecord.toString(),
+              countRecord.toString()
+            );
+          }
+        );
+                
+        tableRows.add(row);
+
+        codes = new HashMap<>();
+      }
+      
+      codes.put(
+        code,
+        codes.getOrDefault(
+          code,
+          Long.valueOf(0)
+        )
+          + 1
+      );
+      
+      lastDate = date;
+      codesForLastDate = codes;
+    }
+    
+    if (nonNull(codesForLastDate)) {
+      Map<String, String> row = new HashMap<>();
+        
+      row.put(
+        "time",
+        lastDate
+      );
+
+      codesForLastDate.forEach(
+        (codeRecord, countRecord) -> {
+          row.put(
+            codeRecord.toString(),
+            countRecord.toString()
+          );
+        }
+      );
+
+      tableRows.add(row);
+    }
+    
+    writer.writeMap(
+      Map.of(
+        "headers", tableHeaders,
+        "rows", tableRows
+      )
+    );
+  }
+  
+  private void processCodeBySource(
+    BufferedReader reader,
+    JsonOutputWriter writer
+  )
+  throws IOException {
+    String line;
+        
+    String source;
+    short code;
+    String codeString;
+
+    List<String> tableHeaders = new ArrayList<>();
+    List<Map<String, String>> tableRows = new ArrayList<>();
+
+    Map<String, Map<Short, Long>> sources = new HashMap<>();
+    
+    Map<Short, Long> codes;
+    
+    tableHeaders.add("source");
+
+    while ((line = reader.readLine()) != null) {
+      Matcher matcher = ACCESS_LOG_REGEXP.matcher(line);
+      matcher.matches();
+      source = matcher.group(1);
+      codeString = matcher.group(3);
+      code = Short.parseShort(codeString);
+      
+      if (!tableHeaders.contains(
+        codeString
+      )) {
+        tableHeaders.add(
+          codeString
+        );
+      }
+      
+      if (!sources.containsKey(source)) {
+        codes = new HashMap<>();
+        sources.put(source, codes);
+      } else {
+        codes = sources.get(source);
+      }
+      
+      codes.put(
+        code,
+        codes.getOrDefault(
+          code,
+          Long.valueOf(0)
+        )
+          + 1
+      );
+    }
+    
+    sources.entrySet()
+      .stream()
+      .parallel()
+      .map(entry -> {
+        Map<String, String> row = new HashMap<>();
+        
+        row.put(
+          "source",
+          entry.getKey()
+        );
+        
+        entry.getValue()
+          .entrySet()
+          .stream()
+          .forEach(codeEntry -> row.put(
+            codeEntry.getKey()
+              .toString(),
+            codeEntry.getValue()
+              .toString()
+          ));
+        
+        return row;
+      })
+      .sequential()
+      .forEach(row -> tableRows.add(row));
+    
+    System.out.println(tableRows);
+    System.out.println(tableHeaders);
+    
+    writer.writeMap(
+      Map.of(
+        "headers", tableHeaders,
+        "rows", tableRows
+      )
+    );
+  }
+  
   @Override
-  public void process(InputStream in, OutputStream out) {
+  public void process(
+    InputStream in,
+    OutputStream out,
+    String type,
+    String mode
+  ) {
     try (BufferedReader reader = new BufferedReader(
       new InputStreamReader(
         in,
@@ -149,111 +348,26 @@ implements Processor {
           Charset.forName("utf-8")
         )
       )) {
-        String line;
-        
-        String source;
-        String dateString;
-        String date;
-        short code;
-        
-        Map<String, Map<Short, Long>> sources = new HashMap<>();
-        
-        Map<Short, Long> codes;
-        
-        String lastDate = null;
-        Map<String, Map<Short, Long>> sourcesForLastDate = null;
-        
-        writer.writeRaw("[");
-        
-        while ((line = reader.readLine()) != null) {
-          Matcher matcher = ACCESS_LOG_REGEXP.matcher(line);
-          matcher.matches();
-          source = matcher.group(1);
-          dateString = matcher.group(2);
-          code = Short.parseShort(matcher.group(3));
-          
-          date = parseDate(dateString)
-            .truncatedTo(
-              ChronoUnit.MINUTES
-            ).toString();
-          
-          if (
-            nonNull(lastDate)
-            && (!date.equals(lastDate))
-          ) {
-            writer.writeMap(
-              Map.of(
-                lastDate,
-                sourcesForLastDate
-              )
-            );
-            
-            writer.writeRaw(",");
-            
-            sources = new HashMap<>();
-          }
-          
-          System.out.println(line);
-          System.out.println("V");
-          System.out.println(source);
-          System.out.println(dateString);
-          System.out.println(date.toString());
-          System.out.println(code);
-          System.out.println("^");
-          System.out.println("");
-          
-          // if (!data.containsKey(date)) {
-//            sources = new HashMap<>();
-            
-//            data.put(
-//              date,
-//              sources
-//            );
-//          } else {
-//            sources = data.get(date);
-//          }
-          
-          if (!sources.containsKey(source)) {
-            codes = new HashMap<>();
-            sources.put(source, codes);
-          } else {
-            codes = sources.get(source);
-          }
-          
-          codes.put(
-            code,
-            codes.getOrDefault(
-              code,
-              Long.valueOf(0)
-            ) + 1
+        if (mode.equals("time")) {
+          processCodeByTime(
+            reader,
+            writer
           );
-          
-          lastDate = date;
-          sourcesForLastDate = sources;
+        } else if (mode.equals("ip")) {
+          processCodeBySource(
+            reader,
+            writer
+          );
         }
-        
-        if (nonNull(sourcesForLastDate))
-          writer.writeMap(
-            Map.of(
-              lastDate,
-              sourcesForLastDate
-            )
-          );
-        
-        writer.writeRaw("]");
       }
-    } catch (Throwable ex) {
+    } catch (IOException ex) {
       Logger.getLogger(IhsHttpAccessProcessor.class.getName()).log(Level.SEVERE, null, ex);
-      ex.printStackTrace(System.err);
       return;
-//    } catch (IOException ex) {
-//      Logger.getLogger(IhsHttpAccessProcessor.class.getName()).log(Level.SEVERE, null, ex);
-//      return;
     }
   }
 
   @Override
-  public boolean accepts(String type) {
+  public boolean accepts(String type, String mode) {
     return true;
   }
   

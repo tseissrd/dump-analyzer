@@ -193,7 +193,7 @@ implements Closeable, Flushable {
     
     for (Object entry : list) {
       if (Objects.nonNull(lastEntry)) {
-        write(entry);
+        write(lastEntry);
         jsonOutput.write(",");
       }
       
@@ -203,9 +203,7 @@ implements Closeable, Flushable {
     if (
       Objects.nonNull(lastEntry)
     ) {
-      write(
-        lastEntry.toString()
-      );
+      write(lastEntry);
     }
     
     jsonOutput.write("]");

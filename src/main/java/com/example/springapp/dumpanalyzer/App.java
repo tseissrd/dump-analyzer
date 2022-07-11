@@ -3,7 +3,6 @@
 package com.example.springapp.dumpanalyzer;
 
 import com.example.springapp.dumpanalyzer.data.ProcessOrchestrator;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -73,17 +72,26 @@ public class App {
         request -> {
           Map data = request.body(Map.class);
           
-          if (!data.containsKey("type") || !data.containsKey("file"))
+          if (
+            !data.containsKey("type")
+            || !data.containsKey("file")
+            || !data.containsKey("mode")
+          )
             return ServerResponse.badRequest()
               .body("Incorrect request body.");
           
           String type = (String)data.get("type");
           String file = (String)data.get("file");
+          String mode = (String)data.get("mode");
           
           return ServerResponse.ok()
             .contentType(APPLICATION_JSON)
             .body(
-              orchestrator.view(file, type)
+              orchestrator.view(
+                file,
+                type,
+                mode
+              )
             );
         })
       .PUT("/upload", accept(MULTIPART_FORM_DATA),

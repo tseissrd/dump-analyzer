@@ -156,4 +156,36 @@ public class FileManager {
     }
   }
   
+  private void rmdir(Path path) {
+    if (
+      Files.exists(path)
+      && Files.isDirectory(path)
+    ) {
+      try {
+        Files.list(path)
+          .forEach(file -> {
+            if (Files.isRegularFile(file))
+              try {
+                Files.delete(file);
+            } catch (IOException ex) {
+              Logger.getLogger(FileManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            else if (Files.isDirectory(file)) {
+              rmdir(file);
+            }
+          });
+        
+        Files.delete(path);
+      } catch (IOException ex) {
+        Logger.getLogger(FileManager.class.getName()).log(Level.SEVERE, null, ex);
+      }
+    }
+  }
+  
+  public void removeAll(String type) {
+    Path path = pathFor(type);
+    
+    rmdir(path);
+  }
+  
 }

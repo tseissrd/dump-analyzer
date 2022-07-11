@@ -2,21 +2,21 @@
  */
 package com.example.springapp.dumpanalyzer.data;
 
-import com.example.springapp.dumpanalyzer.Test;
 import com.example.springapp.dumpanalyzer.config.AppConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.NoSuchFileException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import static java.util.Objects.nonNull;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -30,10 +30,8 @@ public class ProcessOrchestrator {
   private final FileManager fileManager;
   private final ProcessorManager processorManager;
   private final Map<String, Map<String, ManagedFile>> managedFiles;
-  private final Map<ManagedFile, Future<Void>> filesInProcessing;
-  private final Thread cleanupThread;
-  
-  private static final Pattern JSON_EXTENSION_PATTERN = Pattern.compile(".json$");
+  private final Set<ManagedFile> filesInProcessing;
+  private Thread cleanupThread;
   
   @Autowired
   protected ProcessOrchestrator(AppConfiguration config) {
@@ -51,33 +49,28 @@ public class ProcessOrchestrator {
       processorManager = new ProcessorManager();
     }
     
-    filesInProcessing = new ConcurrentHashMap<>();
+    filesInProcessing = new CopyOnWriteArraySet<>();
     managedFiles = new ConcurrentHashMap<>();
+    
+    runCleanups();
+  }
+  
+  public final void runCleanups() {
+    if (
+      nonNull(cleanupThread)
+      && cleanupThread.isAlive()
+      && (!cleanupThread.isInterrupted())
+    )
+      return;
     
     cleanupThread = new Thread() {
       @Override
       public void run() {
-        Future<Void> processing;
-        
         while (!Thread.interrupted()) {
           try {
             Thread.sleep(3000);
             
-            for (ManagedFile managedFile : filesInProcessing.keySet()) {
-              processing = filesInProcessing.get(managedFile);
-              
-              if (processing.isDone()) {
-                synchronized(managedFiles) {
-                  filesInProcessing.remove(managedFile);
-
-                  stopManagingFile(
-                    managedFile.getName(),
-                    managedFile.getType()
-                  );
-                  processing = null;
-                }
-              }
-            }
+            runProcessingCleanup();
           } catch (InterruptedException ex) {
             return;
           }
@@ -86,11 +79,45 @@ public class ProcessOrchestrator {
     };
     
     cleanupThread.start();
-    
-    try {
-      Test.main(new String[0]);
-    } catch (Throwable ex) {
-      Logger.getLogger(ProcessOrchestrator.class.getName()).log(Level.SEVERE, null, ex);
+  }
+  
+  public void stopCleanups() {
+    if (
+      nonNull(cleanupThread)
+      && cleanupThread.isAlive()
+      && (!cleanupThread.isInterrupted())
+    )
+      cleanupThread.interrupt();
+  }
+  
+  private void runProcessingCleanup() {
+    boolean removeFromProcessing;
+            
+    for (ManagedFile managedFile : filesInProcessing) {
+
+      removeFromProcessing = !(
+        managedFile.getAllStates()
+          .entrySet()
+          .stream()
+          .parallel()
+          .anyMatch(entry ->
+            !(
+              entry.getValue()
+                .isDone()
+            )
+          )
+      );
+
+      if (removeFromProcessing) {
+        synchronized(managedFiles) {
+          filesInProcessing.remove(managedFile);
+
+          stopManagingFile(
+            managedFile.getName(),
+            managedFile.getType()
+          );
+        }
+      }
     }
   }
   
@@ -139,6 +166,10 @@ public class ProcessOrchestrator {
     if (!isFileManaged(file, type))
       throw new NoSuchElementException(String.format("managed: (type: %s, file: %s)", type, file));
     
+    ManagedFile managedFile = getManagedFile(file, type);
+    
+    filesInProcessing.remove(managedFile);
+    
     managedFiles.get(type)
       .remove(file);
     
@@ -161,17 +192,39 @@ public class ProcessOrchestrator {
   public String[] list(String type)
   throws IOException {
     
-    return Arrays.stream(
-        fileManager.list(type + "/out")
-      ).map(path -> JSON_EXTENSION_PATTERN.matcher(path)
-        .replaceFirst(""))
-        .toArray(String[]::new);
+    return fileManager.list(type);
   }
   
-  public String view(String file, String type)
+  public String getProcessedType(String file, String type, String mode) {
+    if (mode.equals("text"))
+      return type;
+    
+    return new StringBuilder(type)
+      .append("/")
+      .append(file)
+      .append(".cached")
+      .toString();
+  }
+  
+  public String getProcessedFileName(String file, String type, String mode) {
+    if (mode.equals("text"))
+      return file;
+    
+    return new StringBuilder(file)
+      .append(".")
+      .append(mode)
+      .append(".json")
+      .toString();
+  }
+  
+  public String view(String file, String type, String mode)
   throws IOException {
-    String processedFileName = file + ".json";
-    String processedType = type + "/out";
+    String processedFileName = getProcessedFileName(file, type, mode);
+    String processedType = getProcessedType(file, type, mode);
+    
+    System.out.println(processedFileName);
+    System.out.println(processedType);
+    System.out.println(mode);
     
     if (!fileManager.dirExists(type))
       throw new NoSuchFileException(
@@ -188,7 +241,7 @@ public class ProcessOrchestrator {
       if (!fileManager.dirExists(processedType))
         fileManager.mkdir(processedType);
       
-      Future<Void> processing = processFile(file, type);
+      Future<Void> processing = processFile(file, type, mode);
       
       try {
         processing.get();
@@ -201,8 +254,11 @@ public class ProcessOrchestrator {
     }
   }
   
-  private Future<Void> processFile(String file, String type)
+  private Future<Void> processFile(String file, String type, String mode)
   throws IOException {
+    String processedFileName = getProcessedFileName(file, type, mode);
+    String processedType = getProcessedType(file, type, mode);
+    
     Future<Void> processing;
 
     ManagedFile managedFile;
@@ -213,8 +269,11 @@ public class ProcessOrchestrator {
       ) {
         managedFile = getManagedFile(file, type);
 
-        if (filesInProcessing.containsKey(managedFile))
-          return  filesInProcessing.get(managedFile);
+        if (
+          filesInProcessing.contains(managedFile)
+          && managedFile.hasSavedState(mode)
+        )
+          return  managedFile.getState(mode);
       }
     
       managedFile = manageFile(file, type);
@@ -225,23 +284,33 @@ public class ProcessOrchestrator {
           type
         ),
         fileManager.getSink(
-          file + ".json",
-          type + "/out"
+          processedFileName,
+          processedType
         ),
-        type
+        type,
+        mode
       );
 
-      filesInProcessing.put(
-        managedFile,
-        processing
+      managedFile.saveState(mode, processing);
+      
+      filesInProcessing.add(
+        managedFile
       );
 
       return processing;
     }
   }
   
-  private Future<Void> processData(String file, String type, InputStream data)
+  private Future<Void> processData(
+    String file,
+    String type,
+    String mode,
+    InputStream data
+  )
   throws IOException {
+    String processedFileName = getProcessedFileName(file, type, mode);
+    String processedType = getProcessedType(file, type, mode);
+    
     Future<Void> processing;
 
     ManagedFile managedFile;
@@ -252,8 +321,11 @@ public class ProcessOrchestrator {
       ) {
         managedFile = getManagedFile(file, type);
 
-        if (filesInProcessing.containsKey(managedFile))
-          return  filesInProcessing.get(managedFile);
+        if (
+          filesInProcessing.contains(managedFile)
+          && managedFile.hasSavedState(mode)
+        )
+          return managedFile.getState(mode);
       }
     
       managedFile = manageFile(file, type);
@@ -261,16 +333,15 @@ public class ProcessOrchestrator {
       processing = processorManager.process(
         data,
         fileManager.getSink(
-          file + ".json",
-          type + "/out"
+          processedFileName,
+          processedType
         ),
-        type
+        type,
+        mode
       );
 
-      filesInProcessing.put(
-        managedFile,
-        processing
-      );
+      managedFile.saveState(mode, processing);
+      filesInProcessing.add(managedFile);
 
       return processing;
     }
@@ -285,11 +356,23 @@ public class ProcessOrchestrator {
       throw new IOException(String.format("file (type: %s, file: %s) exists.", type, file));
     }
     
-    Future<Void> process = processData(file, type, data);
+    fileManager.accept(file, type, data);
   }
   
   public void remove(String file, String type) {
-    fileManager.remove(file + ".json", type + "/out");
+    if (isFileManaged(
+      file,
+      type
+    ))
+      stopManagingFile(file, type);
+    
+    fileManager.removeAll(
+      new StringBuilder(type)
+        .append("/")
+        .append(file)
+        .append(".cached")
+        .toString()
+    );
     fileManager.remove(file, type);
   }
   

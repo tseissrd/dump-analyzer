@@ -11,8 +11,16 @@ import java.io.OutputStream;
  */
 public interface Processor {
   
-  public boolean accepts(String type);
+  public boolean accepts(
+    String type,
+    String mode
+  );
   
-  public void process(InputStream in, OutputStream out);
+  public void process(
+    InputStream in,
+    OutputStream out,
+    String type,
+    String mode
+  );
   
 }

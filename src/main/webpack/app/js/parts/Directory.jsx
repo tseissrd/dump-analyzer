@@ -9,7 +9,8 @@ export default function Directory({
   onUpload = () => ({}),
   onDelete = () => ({}),
   style,
-  ...props}) {
+  ...props
+}) {
     
   const {setValue} = useContext();
   
@@ -46,15 +47,13 @@ export default function Directory({
         }}
         onClick={() => {
           chooseFile();
-          console.log('file chosen!');
         }} >загрузить</button>
         <button style={{
           marginLeft: '20px',
-          width: '80px',
-          height: '40px'
+          width: '65px',
+          height: '30px'
         }}
         onClick={() => {
-          console.log('delete');
           onDelete();
         }} >удалить</button>
       </div>

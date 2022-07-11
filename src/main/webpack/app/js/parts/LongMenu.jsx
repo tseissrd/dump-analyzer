@@ -4,15 +4,16 @@ import View from './LongMenu/View.jsx';
 import tabsData from '../../data/LongMenu/tabs.js';
 
 export default function LongMenu({
-    title,
-    data = {
-      type: 'none'
-    },
-    useContext = () => ({}),
-    style,
-    ...props}) {
-    
-  // const {setOption} = useContext();
+  title,
+  data = {
+    type: 'ihs_http_access',
+    mode: 'text',
+    data: null
+  },
+  useContext = () => ({}),
+  style,
+  ...props
+}) {
   
   const tabsStyle = {
     width: '100%',
@@ -23,12 +24,14 @@ export default function LongMenu({
     marginTop: '10px'
   };
   
-  const [mode, setMode] = useState("default");
+  const {
+    setValue,
+    chosenTab
+  } = useContext();
   
-  const viewData = {
-    mode,
-    ...data
-  };
+  function setMode(mode) {
+    setValue('mode', mode);
+  }
   
   return (<div style={style} {...props} >
       <div style={{
@@ -37,13 +40,13 @@ export default function LongMenu({
         <h3>{title}</h3>
         <Tabs
           data={tabsData}
+          chosen={chosenTab}
           style={tabsStyle}
           useContext={() => ({setMode})}
         />
         <View
-          data={viewData}
+          data={data}
           style={viewStyle}
-          mode={mode}
         />
       </div>
     </div>);

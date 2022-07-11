@@ -11,33 +11,36 @@ export default function App(props) {
   const [status, setStatus] = useState({});
   const [settings, setSettings] = useState({
     type: 'ihs_http_access',
-    file: ''
+    file: null,
+    mode: 'default'
   });
   
   const [files, setFiles] = useState([]);
   
-  const [viewData, setViewData] = useState({
-    type: 'ihs_http_access',
-    data: '',
-    mode: 'normal'
-  });
+  const [viewData, setViewData] = useState('');
   
   async function updateDirectory(option) {
-    console.log(settings.type);
-    console.log(settings);
-    
     const response = await fetch('list', {
       method: 'POST',
       body: option? option : settings.type
     });
     
-    setFiles(await response.json());
+    const fileList = await response.json();
+    
+    if (!fileList.includes(settings.file))
+      chooseFile(null);
+    
+    setFiles(fileList);
   }
   
   async function updateView(targetSettings) {
     const usedSettings = targetSettings?
       targetSettings
       : settings;
+    
+    if (!(usedSettings.file)) {
+      return;
+    }
     
     const response = await fetch('view', {
       method: 'POST',
@@ -49,10 +52,13 @@ export default function App(props) {
       )
     });
     
-    setViewData({
-      type: usedSettings.type,
-      data: await response.json()
-    });
+    let data = null;
+    
+    try {
+      data = await response.text();
+    } catch (ex) {}
+        
+    setViewData(data);
   }
   
   function setOption(option) {
@@ -77,51 +83,16 @@ export default function App(props) {
     )
       updateView(newSettings);
     
+    if (
+      setting === 'mode'
+      &&  newSettings['mode'] !== settings['mode']
+    )
+      updateView(newSettings);
+    
     setSettings(newSettings);
   }
   
   const useSettings = () => ({setOption, setValue});
-  
-  async function updateStatus() {
-//    const controller = new AbortController();
-//    let response;
-//    let timeout;
-//    
-//    try {
-//      timeout = setTimeout(controller.abort, 5000);
-//
-//      response = await fetch('status', {signal: controller.signal});
-//      clearTimeout(timeout);
-//    } catch (ex) {
-//      clearTimeout(timeout);
-//      return;
-//    }
-//    const data = await response.json();
-//    setStatus(data);
-  }
-  
-  async function sendControl(data) {
-    const control = {...settings};
-    
-    if (control['threadsNumber'])
-      control['threadsNumber'] = parseInt(control['threadsNumber'])
-    else
-      control['threadsNumber'] = 0;
-    
-    const response = await fetch('go', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(control)
-    });
-  }
-  
-  function processStatus(status) {
-    const processedStatus = {...status};
-    
-    return processedStatus
-  }
   
   function chooseFile(file) {
     setValue(
@@ -143,7 +114,6 @@ export default function App(props) {
   }
   
   async function uploadFiles(files) {
-    console.log(files);
     for (const file of files) {
       await uploadFile(file);
     }
@@ -163,11 +133,11 @@ export default function App(props) {
       })
     });
     
+    chooseFile(null);
     updateDirectory();
   }
   
   const blockStyle = {
-      // float: 'left',
       display: 'inline-block',
       width: '300px',
       height: '300px',
@@ -184,10 +154,10 @@ export default function App(props) {
       overflow: 'scroll'
     };
   
-  useEffect(() => setInterval(updateStatus, 2000), []);
-  
-  // <Settings style={blockStyle} data={settingsData} useContext={useSettings} />
-  // <Status style={blockStyle} onClick={() => updateStatus()} title='статус приложения' data={processStatus(status)} />
+  const viewSettings = {
+    data: viewData,
+    ...settings
+  };
   
   return (
     <div style={{
@@ -203,6 +173,14 @@ export default function App(props) {
         onChoice={chooseFile}
         onUpload={uploadFiles}
         onDelete={deleteFile} /> 
-      <LongMenu data={viewData} style={longMenuStyle} title='просмотр' />
+      <LongMenu
+        data={viewSettings}
+        style={longMenuStyle}
+        title='просмотр'
+        useContext={() => ({
+          chosenTab: settings.mode,
+          ...useSettings()
+        })}
+      />
     </div>);
 }

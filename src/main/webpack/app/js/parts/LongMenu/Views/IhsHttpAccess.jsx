@@ -6,10 +6,6 @@ export default function IhsHttpAccess({
     style,
     ...props}) {
   
-  console.log(`mode is ${mode}`);
-  
-  console.log(data);
-  
   const tableStyle = {
     border: 'thick solid black',
     borderCollapse: 'collapse'
@@ -20,41 +16,23 @@ export default function IhsHttpAccess({
   };
   
   function timeMode(input) {
-    const headers = ["время"];
-    
-    const rows = [];
-    
-    for (const record of input) {
-      const time = Object.keys(record)[0];
-      const rowData = {"время": time};
-      
-      const sources = record[time];
-      
-      for (const source of Object.keys(sources)) {
-        const sourceCodes = sources[source];
-        
-        for (const code of Object.keys(sourceCodes)) {
-          if (!headers.includes(code))
-            headers.push(code);
-          
-          rowData[code] = sourceCodes[code];
-        }
-      }
-      
-      rows.push(rowData);
-    }
-    
-    return {
-      headers,
-      rows
-    };
+    return input;
   }
   
   function ipMode(input) {
-    return {
-      headers: [],
-      rows: []
+    return input;
+  }
+  
+  function translate(string) {
+    const translations = {
+      'time': 'время',
+      'source': 'источник'
     };
+    
+    if (translations[string])
+      return translations[string];
+    else
+      return string;
   }
   
   let viewData = {
@@ -62,49 +40,64 @@ export default function IhsHttpAccess({
     rows: []
   };
   
+  let view;
+  
   if (data) {
-    if (mode === 'time')
-      viewData = timeMode(data);
-    else if (mode === 'ip')
-      viewData = ipMode(data);
-    else
-      viewData = timeMode(data);
+    try {
+      if (mode === 'time') {
+        viewData = timeMode(
+          JSON.parse(data)
+        );
+        view = constructTable(viewData);
+      } else if (mode === 'ip') {
+        viewData = ipMode(
+          JSON.parse(data)
+        );
+        view = constructTable(viewData);
+      } else
+        view = data;
+    } catch (ex) {
+      view = data;
+    }
   }
   
-  const view = (<table style={tableStyle}>
-    <thead>
-      <tr>
+  function constructTable(data) {
+    return (<table style={tableStyle}>
+      <thead>
+        <tr>
+          {
+            data.headers
+              .map((header, i) => (
+                <th 
+                  key={i}
+                  style={cellStyle}
+                >
+                  {translate(header)}
+                </th>))
+          }
+        </tr>
+      </thead>
+      <tbody>
         {
-          viewData.headers
-            .map((header, i) => (
-              <th 
-                key={i}
-                style={cellStyle}
-              >
-                {header}
-              </th>))
+          data.rows
+            .map((row, i) => (<tr key={i}>
+              {
+                data.headers
+                  .map((header, i) => (<td key={i} style={cellStyle}>
+                    {row[header]}
+                  </td>))
+              }
+            </tr>))
         }
-      </tr>
-    </thead>
-    <tbody>
-      {
-        viewData.rows
-          .map((row, i) => (<tr key={i}>
-            {
-              viewData.headers
-                .map((header, i) => (<td key={i} style={cellStyle}>
-                  {row[header]}
-                </td>))
-            }
-          </tr>))
-      }
-    </tbody>
-  </table>);
-  
-  console.log(viewData);
+      </tbody>
+    </table>);
+  }
   
   return (<div style={style} {...props} >
-    <div style={{padding: '4px'}}>{
+    <div style={{
+      padding: '4px',
+      whiteSpace: 'pre-wrap'
+    }}>{
       view
     }</div>
   </div>);

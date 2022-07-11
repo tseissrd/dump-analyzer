@@ -4,10 +4,11 @@ export default function Tabs({
     data = [],
     useContext = () => ({}),
     style,
-    ...props}) {
+    chosen,
+    ...props
+}) {
   
   const context = useContext();
-  console.log(context);
   
   const tabsBlockStyle = {
     height: '110px',
@@ -34,7 +35,12 @@ export default function Tabs({
           data.slice(
             blockNum * 5,
             (blockNum + 1) * 5
-          ).map(({title, action}, num) => <div style={{
+          ).map((
+            {
+              id,
+              title,
+              action
+            }, num) => <div style={{
               width: '160px',
               height: '20px',
               border: 'thin solid black',
@@ -43,15 +49,16 @@ export default function Tabs({
             }} key={num} >
                 <button style={{
                   width: '160px',
-                  height: '20px'
+                  height: '20px',
+                  backgroundColor: chosen === id?
+                    'gold'
+                    : 'white'
                 }} onClick={() => action(context)}>{title}</button>
               </div>)
         }
       </div>
     );
-  
-  console.log(blocks);
-  
+    
   return (<div style={style} {...props} >
     {blocks}
   </div>);

@@ -6,8 +6,6 @@ import com.example.springapp.dumpanalyzer.data.processor.IhsHttpAccessProcessor;
 import com.example.springapp.dumpanalyzer.data.processor.Processor;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -24,8 +22,6 @@ public class ProcessorManager {
   
   private static final List<Processor> processors;
   
-  private static final FileSystem fs = FileSystems.getDefault();
-  
   static {
     processors = new LinkedList<>();
     processors.add(
@@ -41,11 +37,22 @@ public class ProcessorManager {
     executor = Executors.newFixedThreadPool(threads);
   }
   
-  public Future<Void> process(final InputStream in, final OutputStream out, String type) {
+  public Future<Void> process(
+    final InputStream in,
+    final OutputStream out,
+    String type,
+    String mode
+  ) {
     return executor.submit(() -> {
       for (Processor processor : processors) {
-        if (processor.accepts(type)) {
-          processor.process(in, out);
+        if (processor.accepts(type, mode)) {
+          processor.process(
+            in,
+            out,
+            type,
+            mode
+          );
+          System.out.println("in processor processing done");
           return (Void)null;
         }
       }
