@@ -111,8 +111,6 @@ public class App {
               .body("no file");
           
           MultiPart fileData = (MultiPart)fileDataArray.get(0);
-          System.out.println(fileDataArray.size());
-          System.out.println(fileData.getSize());
           
           orchestrator.accept(
             name,

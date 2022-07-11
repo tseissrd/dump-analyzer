@@ -222,10 +222,6 @@ public class ProcessOrchestrator {
     String processedFileName = getProcessedFileName(file, type, mode);
     String processedType = getProcessedType(file, type, mode);
     
-    System.out.println(processedFileName);
-    System.out.println(processedType);
-    System.out.println(mode);
-    
     if (!fileManager.dirExists(type))
       throw new NoSuchFileException(
         String.format(
