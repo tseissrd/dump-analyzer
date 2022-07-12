@@ -26,6 +26,16 @@ public class FileManager {
   private final String pathBase;
   private final FileSystem fs;
   
+  public FileManager() {
+    fs = FileSystems.getDefault();
+    
+    this.pathBase = fs.getPath(
+      System.getProperty("java.io.tmpdir"),
+      "dump-analyzer"
+    ).toAbsolutePath()
+      .toString();
+  }
+  
   public FileManager(String pathBase) {
     this.pathBase = pathBase;
     fs = FileSystems.getDefault();
@@ -135,6 +145,8 @@ public class FileManager {
     try (OutputStream sink = Files.newOutputStream(path)) {
       while ((read = data.read(buf)) > -1)
         sink.write(buf, 0, read);
+    } finally {
+      data.close();
     }
   }
   

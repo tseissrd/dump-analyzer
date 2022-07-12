@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import static java.util.Objects.nonNull;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -43,10 +44,11 @@ implements Processor {
   }
   
   private static final Pattern ACCESS_LOG_REGEXP 
-    = Pattern.compile("^([0-9.]+)[^\\[]+\\[([^\\]]+)\\]\\s\"[^\"]+\"\\s([0-9]+).*$");
+//    = Pattern.compile("^([0-9.]+)[^\\[]+\\[([^\\]]+)\\]\\s\"[^\"]+\"\\s([0-9]+).*$");
+    = Pattern.compile("^([0-9.]++)[^\\[]++\\[([^\\]]++)\\]\\s\"(?:[^\"]|(?>\\\"))++\"\\s([0-9]++).*+$");
   
   private static final Pattern DATE_REGEXP
-    = Pattern.compile("^([0-9]+)/([a-zA-Z]+)/([0-9]+):([0-9]+):([0-9]+):([0-9]+)\\s([+-])([0-9]+)$");
+    = Pattern.compile("^([0-9]++)/([a-zA-Z]++)/([0-9]++):([0-9]++):([0-9]++):([0-9]++)\\s([+-])([0-9]++)$");
 
   private String parseMonth(String month) {
     if (month.equals("Jan")) {
@@ -152,6 +154,8 @@ implements Processor {
     Map<Short, Long> codesForLastDate = null;
     
     tableHeaders.add("time");
+    
+    long rowTotal = 0;
 
     while ((line = reader.readLine()) != null) {
       Matcher matcher = ACCESS_LOG_REGEXP.matcher(line);
@@ -185,6 +189,11 @@ implements Processor {
           lastDate
         );
         
+        row.put(
+          "total",
+          Long.toString(rowTotal)
+        );
+        
         codesForLastDate.forEach(
           (codeRecord, countRecord) -> {
             row.put(
@@ -197,6 +206,7 @@ implements Processor {
         tableRows.add(row);
 
         codes = new HashMap<>();
+        rowTotal = 0;
       }
       
       codes.put(
@@ -210,6 +220,7 @@ implements Processor {
       
       lastDate = date;
       codesForLastDate = codes;
+      rowTotal += 1;
     }
     
     if (nonNull(codesForLastDate)) {
@@ -218,6 +229,11 @@ implements Processor {
       row.put(
         "time",
         lastDate
+      );
+      
+      row.put(
+        "total",
+        Long.toString(rowTotal)
       );
 
       codesForLastDate.forEach(
@@ -232,11 +248,19 @@ implements Processor {
       tableRows.add(row);
     }
     
+    tableHeaders.add("total");
+    
+    // JDK 8 FIX
+    Map<String, Object> mapToWrite = new HashMap<>();
+    mapToWrite.put("headers", tableHeaders);
+    mapToWrite.put("rows", tableRows);
+    
     writer.writeMap(
-      Map.of(
-        "headers", tableHeaders,
-        "rows", tableRows
-      )
+//      Map.of(
+//        "headers", tableHeaders,
+//        "rows", tableRows
+//      )
+      mapToWrite
     );
   }
   
@@ -297,35 +321,50 @@ implements Processor {
       .parallel()
       .map(entry -> {
         Map<String, String> row = new HashMap<>();
+        long rowTotal = 0;
         
         row.put(
           "source",
           entry.getKey()
         );
         
-        entry.getValue()
-          .entrySet()
-          .stream()
-          .forEach(codeEntry -> row.put(
+        for (
+          Entry<Short, Long> codeEntry : entry.getValue()
+            .entrySet()
+        ) {
+          rowTotal += codeEntry.getValue();
+
+          row.put(
             codeEntry.getKey()
               .toString(),
             codeEntry.getValue()
               .toString()
-          ));
+          );
+        }
+        
+        row.put(
+          "total",
+          Long.toString(rowTotal)
+        );
         
         return row;
       })
       .sequential()
       .forEach(row -> tableRows.add(row));
     
-    System.out.println(tableRows);
-    System.out.println(tableHeaders);
+    tableHeaders.add("total");
+    
+    // JDK 8 FIX
+    Map<String, Object> mapToWrite = new HashMap<>();
+    mapToWrite.put("headers", tableHeaders);
+    mapToWrite.put("rows", tableRows);
     
     writer.writeMap(
-      Map.of(
-        "headers", tableHeaders,
-        "rows", tableRows
-      )
+      mapToWrite
+//      Map.of(
+//        "headers", tableHeaders,
+//        "rows", tableRows
+//      )
     );
   }
   

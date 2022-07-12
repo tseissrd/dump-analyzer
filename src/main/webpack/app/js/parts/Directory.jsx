@@ -1,4 +1,5 @@
 import React from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Directory({
   title,
@@ -14,7 +15,7 @@ export default function Directory({
     
   const {setValue} = useContext();
   
-  const fileInputUuid = crypto.randomUUID();
+  const fileInputUuid = uuidv4();
   
   function chooseFile() {
     const fileInputEl = document.getElementById(`${fileInputUuid}-file`);
@@ -59,12 +60,12 @@ export default function Directory({
       </div>
       {data.map((file, num) => <div style={{
         width: '100%',
-        height: '20px',
+//        height: '20px',
         border: 'thin solid black'
       }} key={num} >
         <button style={{
           width: '100%',
-          height: '20px',
+//          height: '20px',
           backgroundColor: chosen === file?
             'gold'
             : 'white'

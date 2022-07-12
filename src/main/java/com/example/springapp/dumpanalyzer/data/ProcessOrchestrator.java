@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -36,7 +37,7 @@ public class ProcessOrchestrator {
   @Autowired
   protected ProcessOrchestrator(AppConfiguration config) {
     fileManager = new FileManager(
-      config.get("custom.dumpanalyzer.data-path-base")
+      // config.get("custom.dumpanalyzer.data-path-base")
     );
     
     String processorThreadsConfig = config.get("custom.dumpanalyzer.processor-threads");
@@ -356,6 +357,9 @@ public class ProcessOrchestrator {
   }
   
   public void remove(String file, String type) {
+    requireNonNull(file);
+    requireNonNull(type);
+    
     if (isFileManaged(
       file,
       type

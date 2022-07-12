@@ -4,6 +4,7 @@ package com.example.springapp.dumpanalyzer.data;
 
 import com.example.springapp.dumpanalyzer.data.processor.IhsHttpAccessProcessor;
 import com.example.springapp.dumpanalyzer.data.processor.Processor;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.LinkedList;
@@ -43,21 +44,42 @@ public class ProcessorManager {
     String type,
     String mode
   ) {
-    return executor.submit(() -> {
-      for (Processor processor : processors) {
-        if (processor.accepts(type, mode)) {
-          processor.process(
-            in,
-            out,
-            type,
-            mode
-          );
-          System.out.println("in processor processing done");
+    try {
+      return executor.submit(() -> {
+        try {
+          for (Processor processor : processors) {
+            if (processor.accepts(type, mode)) {
+              processor.process(
+                in,
+                out,
+                type,
+                mode
+              );
+              return (Void)null;
+            }
+          }
           return (Void)null;
+        } finally {
+          try {
+            out.close();
+          } finally {
+            in.close();
+          }
         }
+      });
+    } catch (Throwable ex) {
+      try {
+        try {
+          in.close();
+          out.close();
+        } finally {
+          out.close();
+        }
+      } catch (IOException ioEx) {
       }
-      return (Void)null;
-    });
+      
+      throw ex;
+    }
   }
   
 }

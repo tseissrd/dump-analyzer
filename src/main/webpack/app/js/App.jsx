@@ -122,6 +122,9 @@ export default function App(props) {
   }
   
   async function deleteFile() {
+    if (!settings.file || !settings.type)
+      return;
+    
     const request = await fetch('delete', {
       method: 'DELETE',
       headers: {

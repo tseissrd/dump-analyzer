@@ -3,11 +3,15 @@
 package com.example.springapp.dumpanalyzer;
 
 import com.example.springapp.dumpanalyzer.data.ProcessOrchestrator;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart;
+import javax.servlet.http.Part;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,8 +32,33 @@ public class App {
   @Autowired
   private ProcessOrchestrator orchestrator;
   
+  private static final int IO_BUFFER_SIZE = 16384;
+  
+  private static String readMultipartContent(Part data)
+  throws IOException {
+    try (Reader reader = new InputStreamReader(
+      data.getInputStream(),
+      Charset.forName("utf-8")
+    )) {
+      char[] buf = new char[IO_BUFFER_SIZE / 16];
+      
+      StringBuilder result = new StringBuilder();
+      
+      int read;
+      
+      while ((read = reader.read(buf)) > 0) {
+        result.append(buf, 0, read);
+      }
+      
+      return result.toString();
+    } catch (IOException ex) {
+      throw ex;
+    }
+  }
+  
   @Bean
-  public RouterFunction<ServerResponse> getRouters() throws InterruptedException {
+  public RouterFunction<ServerResponse> getRouters()
+  throws InterruptedException {
     return route()
       .GET("/", accept(ALL),
         request -> ServerResponse.ok()
@@ -46,6 +75,7 @@ public class App {
           })
       .POST("/list", accept(TEXT_PLAIN),
         request -> {
+          
           String data = request.body(String.class);
           
           if (
@@ -98,19 +128,19 @@ public class App {
         request -> {
           MultiValueMap data = request.multipartData();
           ArrayList nameDataArray = (ArrayList)data.get("name");
-          MultiPart nameData = (MultiPart)nameDataArray.get(0);
-          String name = new String(nameData.getBytes(), "utf-8");
+          Part nameData = (Part)nameDataArray.get(0);
+          String name = readMultipartContent(nameData);
           
           ArrayList typeDataArray = (ArrayList)data.get("type");
-          MultiPart typeData = (MultiPart)typeDataArray.get(0);
-          String type = new String(typeData.getBytes(), "utf-8");
+          Part typeData = (Part)typeDataArray.get(0);
+          String type = readMultipartContent(typeData);
 
           ArrayList fileDataArray = (ArrayList)data.get("file");
           if (Objects.isNull(fileDataArray))
             return ServerResponse.badRequest()
               .body("no file");
           
-          MultiPart fileData = (MultiPart)fileDataArray.get(0);
+          Part fileData = (Part)fileDataArray.get(0);
           
           orchestrator.accept(
             name,
@@ -134,10 +164,15 @@ public class App {
                     
           orchestrator.remove(file, type);
           
+          // JDK 8 FIX
+          Map<String, String> response = new HashMap<>();
+          response.put("status", "ok");
+          
           return ServerResponse.ok()
             .contentType(APPLICATION_JSON)
             .body(
-              Map.of("status", "ok")
+              response
+              // Map.of("status", "ok")
             );
         })
       .build();

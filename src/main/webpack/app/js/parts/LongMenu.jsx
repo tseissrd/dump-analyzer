@@ -39,7 +39,7 @@ export default function LongMenu({
       }}>
         <h3>{title}</h3>
         <Tabs
-          data={tabsData}
+          data={tabsData[data.type]}
           chosen={chosenTab}
           style={tabsStyle}
           useContext={() => ({setMode})}

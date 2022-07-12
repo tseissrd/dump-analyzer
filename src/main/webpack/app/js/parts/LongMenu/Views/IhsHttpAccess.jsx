@@ -12,7 +12,8 @@ export default function IhsHttpAccess({
   };
   
   const cellStyle = {
-    border: 'thin solid black'
+    border: 'thin solid black',
+    textAlign: 'center'
   };
   
   function timeMode(input) {
@@ -26,7 +27,8 @@ export default function IhsHttpAccess({
   function translate(string) {
     const translations = {
       'time': 'время',
-      'source': 'источник'
+      'source': 'источник',
+      'total': 'всего'
     };
     
     if (translations[string])
@@ -83,7 +85,11 @@ export default function IhsHttpAccess({
             .map((row, i) => (<tr key={i}>
               {
                 data.headers
-                  .map((header, i) => (<td key={i} style={cellStyle}>
+                  .map((header, i) => (
+                  <td
+                    key={i}
+                    style={cellStyle}
+                  >
                     {row[header]}
                   </td>))
               }
