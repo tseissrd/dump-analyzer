@@ -45,7 +45,7 @@ implements Processor {
   
   private static final Pattern ACCESS_LOG_REGEXP 
 //    = Pattern.compile("^([0-9.]+)[^\\[]+\\[([^\\]]+)\\]\\s\"[^\"]+\"\\s([0-9]+).*$");
-    = Pattern.compile("^([0-9.]++)[^\\[]++\\[([^\\]]++)\\]\\s\"(?:[^\"]|(?>\\\"))++\"\\s([0-9]++).*+$");
+    = Pattern.compile("^([0-9.]++)[^\\[]++\\[([^\\]]++)\\]\\s\"(?:\\\\\"|[^\"])++\"\\s([0-9]++).*+$");
   
   private static final Pattern DATE_REGEXP
     = Pattern.compile("^([0-9]++)/([a-zA-Z]++)/([0-9]++):([0-9]++):([0-9]++):([0-9]++)\\s([+-])([0-9]++)$");
@@ -147,6 +147,10 @@ implements Processor {
 
     List<String> tableHeaders = new ArrayList<>();
     List<Map<String, String>> tableRows = new ArrayList<>();
+    
+    Map<String, String> parsingErrors = new HashMap<>();
+    long parsingErrorsCount = 0;
+    tableRows.add(parsingErrors);
 
     Map<Short, Long> codes = new HashMap<>();
 
@@ -158,69 +162,80 @@ implements Processor {
     long rowTotal = 0;
 
     while ((line = reader.readLine()) != null) {
-      Matcher matcher = ACCESS_LOG_REGEXP.matcher(line);
-      matcher.matches();
-      dateString = matcher.group(2);
-      codeString = matcher.group(3);
-      code = Short.parseShort(codeString);
-      
-      if (!tableHeaders.contains(
-        codeString
-      )) {
-        tableHeaders.add(
+      try {
+        
+        Matcher matcher = ACCESS_LOG_REGEXP.matcher(line);
+        matcher.matches();
+        dateString = matcher.group(2);
+        codeString = matcher.group(3);
+        code = Short.parseShort(codeString);
+
+        if (!tableHeaders.contains(
           codeString
-        );
-      }
+        )) {
+          tableHeaders.add(
+            codeString
+          );
+        }
 
-      date = parseDate(dateString)
-        .truncatedTo(
-          ChronoUnit.MINUTES
-        )
-        .toString();
-
-      if (
-        nonNull(lastDate)
-        && (!date.equals(lastDate))
-      ) {
-        Map<String, String> row = new HashMap<>();
-        
-        row.put(
-          "time",
-          lastDate
-        );
-        
-        row.put(
-          "total",
-          Long.toString(rowTotal)
-        );
-        
-        codesForLastDate.forEach(
-          (codeRecord, countRecord) -> {
-            row.put(
-              codeRecord.toString(),
-              countRecord.toString()
-            );
-          }
-        );
-                
-        tableRows.add(row);
-
-        codes = new HashMap<>();
-        rowTotal = 0;
-      }
+        date = parseDate(dateString)
+          .truncatedTo(
+            ChronoUnit.MINUTES
+          )
+          .toString();
       
-      codes.put(
-        code,
-        codes.getOrDefault(
+
+        if (
+          nonNull(lastDate)
+          && (!date.equals(lastDate))
+        ) {
+          Map<String, String> row = new HashMap<>();
+
+          row.put(
+            "time",
+            lastDate
+          );
+
+          row.put(
+            "total",
+            Long.toString(rowTotal)
+          );
+
+          codesForLastDate.forEach(
+            (codeRecord, countRecord) -> {
+              row.put(
+                codeRecord.toString(),
+                countRecord.toString()
+              );
+            }
+          );
+
+          tableRows.add(row);
+
+          codes = new HashMap<>();
+          rowTotal = 0;
+        }
+
+        codes.put(
           code,
-          Long.valueOf(0)
-        )
-          + 1
-      );
+          codes.getOrDefault(
+            code,
+            Long.valueOf(0)
+          )
+            + 1
+        );
+
+        lastDate = date;
+        codesForLastDate = codes;
+        rowTotal += 1;
       
-      lastDate = date;
-      codesForLastDate = codes;
-      rowTotal += 1;
+      } catch (IllegalStateException ex) {
+        parsingErrorsCount += 1;
+        Logger.getLogger(
+          IhsHttpAccessProcessor.class
+            .getName()
+        ).log(Level.SEVERE, "Could not parse line:\n{0}", line);
+      }
     }
     
     if (nonNull(codesForLastDate)) {
@@ -250,6 +265,15 @@ implements Processor {
     
     tableHeaders.add("total");
     
+    parsingErrors.put(
+      "total",
+      Long.toString(parsingErrorsCount)
+    );
+    parsingErrors.put(
+      "time",
+      "не удалось прочитать (записей)"
+    );
+    
     // JDK 8 FIX
     Map<String, Object> mapToWrite = new HashMap<>();
     mapToWrite.put("headers", tableHeaders);
@@ -277,6 +301,10 @@ implements Processor {
 
     List<String> tableHeaders = new ArrayList<>();
     List<Map<String, String>> tableRows = new ArrayList<>();
+    
+    Map<String, String> parsingErrors = new HashMap<>();
+    long parsingErrorsCount = 0;
+    tableRows.add(parsingErrors);
 
     Map<String, Map<Short, Long>> sources = new HashMap<>();
     
@@ -285,35 +313,45 @@ implements Processor {
     tableHeaders.add("source");
 
     while ((line = reader.readLine()) != null) {
-      Matcher matcher = ACCESS_LOG_REGEXP.matcher(line);
-      matcher.matches();
-      source = matcher.group(1);
-      codeString = matcher.group(3);
-      code = Short.parseShort(codeString);
-      
-      if (!tableHeaders.contains(
-        codeString
-      )) {
-        tableHeaders.add(
+      try {
+        
+        Matcher matcher = ACCESS_LOG_REGEXP.matcher(line);
+        matcher.matches();
+        source = matcher.group(1);
+        codeString = matcher.group(3);
+        code = Short.parseShort(codeString);
+
+        if (!tableHeaders.contains(
           codeString
-        );
-      }
-      
-      if (!sources.containsKey(source)) {
-        codes = new HashMap<>();
-        sources.put(source, codes);
-      } else {
-        codes = sources.get(source);
-      }
-      
-      codes.put(
-        code,
-        codes.getOrDefault(
+        )) {
+          tableHeaders.add(
+            codeString
+          );
+        }
+
+        if (!sources.containsKey(source)) {
+          codes = new HashMap<>();
+          sources.put(source, codes);
+        } else {
+          codes = sources.get(source);
+        }
+
+        codes.put(
           code,
-          Long.valueOf(0)
-        )
-          + 1
-      );
+          codes.getOrDefault(
+            code,
+            Long.valueOf(0)
+          )
+            + 1
+        );
+      
+      } catch (IllegalStateException ex) {
+        parsingErrorsCount += 1;
+        Logger.getLogger(
+          IhsHttpAccessProcessor.class
+            .getName()
+        ).log(Level.SEVERE, "Could not parse line:\n{0}", line);
+      }
     }
     
     sources.entrySet()
@@ -351,6 +389,15 @@ implements Processor {
       })
       .sequential()
       .forEach(row -> tableRows.add(row));
+    
+    parsingErrors.put(
+      "total",
+      Long.toString(parsingErrorsCount)
+    );
+    parsingErrors.put(
+      "source",
+      "не удалось прочитать (записей)"
+    );
     
     tableHeaders.add("total");
     

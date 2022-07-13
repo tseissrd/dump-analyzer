@@ -6,6 +6,10 @@ import com.example.springapp.dumpanalyzer.config.AppConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.NoSuchFileException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -251,6 +255,40 @@ public class ProcessOrchestrator {
     }
   }
   
+//  TODO
+//  public InputStream getFile(String file, String type, String mode)
+//  throws IOException {
+//    String processedFileName = getProcessedFileName(file, type, mode);
+//    String processedType = getProcessedType(file, type, mode);
+//    
+//    if (!fileManager.dirExists(type))
+//      throw new NoSuchFileException(
+//        String.format(
+//          "type: %s, file: %s",
+//          processedFileName,
+//          processedType
+//        )
+//      );
+//    
+//    if (fileManager.fileExists(processedFileName, processedType))
+//      return fileManager.view(processedFileName, processedType);
+//    else {
+//      if (!fileManager.dirExists(processedType))
+//        fileManager.mkdir(processedType);
+//      
+//      Future<Void> processing = processFile(file, type, mode);
+//      
+//      try {
+//        processing.get();
+//      } catch (InterruptedException ex) {
+//        Logger.getLogger(ProcessOrchestrator.class.getName()).log(Level.SEVERE, null, ex);
+//      } catch (ExecutionException ex) {
+//        Logger.getLogger(ProcessOrchestrator.class.getName()).log(Level.SEVERE, null, ex);
+//      }
+//      return fileManager.view(processedFileName, processedType);
+//    }
+//  }
+  
   private Future<Void> processFile(String file, String type, String mode)
   throws IOException {
     String processedFileName = getProcessedFileName(file, type, mode);
@@ -346,14 +384,23 @@ public class ProcessOrchestrator {
   
   public void accept(String file, String type, InputStream data)
   throws IOException {
-    if (fileManager.fileExists(file, type)) {
-      if (!isFileManaged(file, type)) {
+    String fileNameWithTimestamp = new StringBuilder(file)
+      .append("@")
+      .append(
+        Instant.now()
+          .truncatedTo(ChronoUnit.SECONDS)
+          .toString()
+          .replace(':', '_')
+      ).toString();
+    
+    if (fileManager.fileExists(fileNameWithTimestamp, type)) {
+      if (!isFileManaged(fileNameWithTimestamp, type)) {
       }
       
-      throw new IOException(String.format("file (type: %s, file: %s) exists.", type, file));
+      throw new IOException(String.format("file (type: %s, file: %s) exists.", type, fileNameWithTimestamp));
     }
     
-    fileManager.accept(file, type, data);
+    fileManager.accept(fileNameWithTimestamp, type, data);
   }
   
   public void remove(String file, String type) {
