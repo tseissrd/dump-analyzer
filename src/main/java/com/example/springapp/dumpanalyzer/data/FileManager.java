@@ -30,7 +30,9 @@ public class FileManager {
     fs = FileSystems.getDefault();
     
     this.pathBase = fs.getPath(
-      System.getProperty("java.io.tmpdir"),
+      //System.getProperty("java.io.tmpdir"),
+      System.getProperty("user.home"),
+      "app-storage",
       "dump-analyzer"
     ).toAbsolutePath()
       .toString();

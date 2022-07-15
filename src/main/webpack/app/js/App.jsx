@@ -150,11 +150,9 @@ export default function App(props) {
     
   const longMenuStyle = {
       display: 'block',
-      resize: 'both',
-      width: '1200px',
-      height: '800px',
-      border: 'thick double black',
-      overflow: 'scroll'
+      width: 'fit-content',
+      height: 'fit-content',
+      border: 'thick double black'
     };
   
   const viewSettings = {

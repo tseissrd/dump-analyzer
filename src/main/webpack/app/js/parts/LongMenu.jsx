@@ -21,7 +21,12 @@ export default function LongMenu({
   };
   
   const viewStyle = {
-    marginTop: '10px'
+    marginTop: '10px',
+    height: '600px',
+    width: '800px',
+    border: 'thin solid black',
+    overflow: 'scroll',
+    resize: 'both'
   };
   
   const {
@@ -37,13 +42,17 @@ export default function LongMenu({
       <div style={{
         padding: '4px'
       }}>
-        <h3>{title}</h3>
-        <Tabs
-          data={tabsData[data.type]}
-          chosen={chosenTab}
-          style={tabsStyle}
-          useContext={() => ({setMode})}
-        />
+        <div style={{
+          height: 'fit-content'
+        }}>
+          <h3>{title}</h3>
+          <Tabs
+            data={tabsData[data.type]}
+            chosen={chosenTab}
+            style={tabsStyle}
+            useContext={() => ({setMode})}
+          />
+        </div>
         <View
           data={data}
           style={viewStyle}
