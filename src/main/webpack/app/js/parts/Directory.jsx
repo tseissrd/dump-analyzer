@@ -58,21 +58,25 @@ export default function Directory({
           onDelete();
         }} >удалить</button>
       </div>
-      {data.map((file, num) => <div style={{
-        width: '100%',
-//        height: '20px',
-        border: 'thin solid black'
-      }} key={num} >
-        <button style={{
-          width: '100%',
-//          height: '20px',
-          backgroundColor: chosen === file?
-            'gold'
-            : 'white'
-        }} onClick={() => onChoice(file)}>
-          {file}
-        </button>
-      </div>)}
+      {
+        data?
+          data.map((file, num) => <div style={{
+            width: '100%',
+    //        height: '20px',
+            border: 'thin solid black'
+          }} key={num} >
+            <button style={{
+              width: '100%',
+    //          height: '20px',
+              backgroundColor: chosen === file?
+                'gold'
+                : 'white'
+            }} onClick={() => onChoice(file)}>
+              {file}
+            </button>
+          </div>)
+        : ""
+      }
     </div>
   </div>);
 }

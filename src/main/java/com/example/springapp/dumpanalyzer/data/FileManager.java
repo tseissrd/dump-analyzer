@@ -12,6 +12,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -97,7 +98,7 @@ public class FileManager {
     );
   }
   
-  public String[] list(String type)
+  public String[] list(String type, Comparator<? super Path> comparator)
   throws IOException {
     Path path = pathFor(type);
     
@@ -107,6 +108,12 @@ public class FileManager {
     String[] listing = Files.list(path)
       .filter(Files::isRegularFile)
       .map(Path::getFileName)
+      .sorted(
+        (path1, path2) -> comparator.compare(
+          path.resolve(path1),
+          path.resolve(path2)
+        )
+      )
       .map(Path::toString)
       .toArray(String[]::new);
     

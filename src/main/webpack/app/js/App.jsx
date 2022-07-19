@@ -15,7 +15,7 @@ export default function App(props) {
     mode: 'default'
   });
   
-  const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState(null);
   
   const [viewData, setViewData] = useState('');
   
@@ -160,11 +160,15 @@ export default function App(props) {
     ...settings
   };
   
+  if (files === null)
+    updateDirectory();
+  
+  // <Menu style={blockStyle} data={menuData} useContext={useSettings} />
+  
   return (
     <div style={{
       display: 'contents'
     }}>
-      <Menu style={blockStyle} data={menuData} useContext={useSettings} />
       <Directory
         title="файлы"
         chosen={settings.file}

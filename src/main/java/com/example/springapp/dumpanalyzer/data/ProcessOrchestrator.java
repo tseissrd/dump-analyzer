@@ -5,6 +5,7 @@ package com.example.springapp.dumpanalyzer.data;
 import com.example.springapp.dumpanalyzer.config.AppConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.time.Duration;
 import java.time.Instant;
@@ -197,7 +198,21 @@ public class ProcessOrchestrator {
   public String[] list(String type)
   throws IOException {
     
-    return fileManager.list(type);
+    return fileManager.list(
+      type,
+      (path1, path2) -> {
+        try {
+          return Files.getLastModifiedTime(path2)
+            .compareTo(
+              Files.getLastModifiedTime(path1)
+            );
+        } catch (IOException ex) {
+          Logger.getLogger(ProcessOrchestrator.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return path1.compareTo(path2);
+      }
+    );
   }
   
   public String getProcessedType(String file, String type, String mode) {
