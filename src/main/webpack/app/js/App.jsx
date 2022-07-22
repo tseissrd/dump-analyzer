@@ -92,7 +92,15 @@ export default function App(props) {
     setSettings(newSettings);
   }
   
-  const useSettings = () => ({setOption, setValue});
+  function getValue(setting) {
+    return settings[setting];
+  }
+  
+  const useSettings = () => ({
+    setOption,
+    setValue,
+    getValue
+  });
   
   function chooseFile(file) {
     setValue(
