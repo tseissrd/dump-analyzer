@@ -2,6 +2,7 @@
  */
 package com.example.springapp.dumpanalyzer.data.processor;
 
+import com.example.springapp.dumpanalyzer.data.filter.Filter;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -20,7 +21,8 @@ public interface Processor {
     InputStream in,
     OutputStream out,
     String type,
-    String mode
+    String mode,
+    Filter filter
   );
   
 }

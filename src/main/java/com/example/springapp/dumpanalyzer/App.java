@@ -3,6 +3,8 @@
 package com.example.springapp.dumpanalyzer;
 
 import com.example.springapp.dumpanalyzer.data.ProcessOrchestrator;
+import com.example.springapp.dumpanalyzer.data.filter.Filter;
+import com.example.springapp.dumpanalyzer.data.filter.Filter.FilterMode;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -11,6 +13,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.http.Part;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -114,13 +118,55 @@ public class App {
           String file = (String)data.get("file");
           String mode = (String)data.get("mode");
           
+          FilterMode filterMode = FilterMode.NONE;
+          String filterFrom = null;
+          String filterTo = null;
+          
+          if (
+            data.containsKey("filter")
+          ) {
+            try {
+              filterMode = FilterMode.valueOf(
+                (String)data.get("filterFrom")
+              );
+            } catch (Throwable ex) {
+              Logger.getLogger(App.class.getName()).log(Level.SEVERE, "exception when parsing \"filterFrom\"");
+              Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+            }
+          }
+          
+          if (
+            data.containsKey("filterFrom")
+          ) {
+            try {
+              filterFrom = (String)data.get("filterFrom");
+            } catch (Throwable ex) {
+              Logger.getLogger(App.class.getName()).log(Level.SEVERE, "exception when parsing \"filterFrom\"");
+              Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+            }
+          }
+          
+          if (
+            data.containsKey("filterTo")
+          ) {
+            try {
+              filterFrom = (String)data.get("filterTo");
+            } catch (Throwable ex) {
+              Logger.getLogger(App.class.getName()).log(Level.SEVERE, "exception when parsing \"filterTo\"");
+              Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+            }
+          }
+          
+          Filter filter = Filter.getInstance(filterMode, filterFrom, filterTo);
+          
           return ServerResponse.ok()
             .contentType(APPLICATION_JSON)
             .body(
               orchestrator.view(
                 file,
                 type,
-                mode
+                mode,
+                filter
               )
             );
         })

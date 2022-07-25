@@ -2,6 +2,7 @@
  */
 package com.example.springapp.dumpanalyzer.data;
 
+import com.example.springapp.dumpanalyzer.data.filter.Filter;
 import com.example.springapp.dumpanalyzer.data.processor.IhsHttpAccessProcessor;
 import com.example.springapp.dumpanalyzer.data.processor.Processor;
 import java.io.IOException;
@@ -42,7 +43,8 @@ public class ProcessorManager {
     final InputStream in,
     final OutputStream out,
     String type,
-    String mode
+    String mode,
+    Filter filter
   ) {
     try {
       return executor.submit(() -> {
@@ -53,7 +55,8 @@ public class ProcessorManager {
                 in,
                 out,
                 type,
-                mode
+                mode,
+                filter
               );
               return (Void)null;
             }

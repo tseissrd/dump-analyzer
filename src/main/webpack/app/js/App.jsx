@@ -72,20 +72,19 @@ export default function App(props) {
   }
   
   function setValue(setting, value) {
+    const updateViewOn = [
+      'file',
+      'mode'
+    ];
+    
     const newSettings = {
         ...settings
       };
     newSettings[setting] = value;
     
     if (
-      setting === 'file'
-      &&  newSettings['file'] !== settings['file']
-    )
-      updateView(newSettings);
-    
-    if (
-      setting === 'mode'
-      &&  newSettings['mode'] !== settings['mode']
+      updateViewOn.includes(setting)
+      &&  newSettings[setting] !== settings[setting]
     )
       updateView(newSettings);
     
@@ -192,6 +191,7 @@ export default function App(props) {
         title='просмотр'
         useContext={() => ({
           chosenTab: settings.mode,
+          applyFilter: updateView,
           ...useSettings()
         })}
       />

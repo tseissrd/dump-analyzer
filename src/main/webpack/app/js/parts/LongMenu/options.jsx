@@ -15,6 +15,31 @@ export default function Options({
   
   const context = useContext();
   
+  function constructButton(definition, key) {
+    return (<div
+      key={key}
+      style={optionStyle}
+    >
+      <div style={{
+        width: 'fit-content',
+        height: 'fit-content',
+        marginLeft: 'auto',
+        marginRight: '5px'
+      }}>
+        <button style={{
+            width: 'fit-content',
+            height: 'fit-content'
+          }}
+          onClick={() => definition.action(
+            context
+          )}
+        >
+          {definition.title}
+        </button>
+      </div>
+    </div>);
+  }
+  
   function constructRadio(definition, key) {
     return (<div
       key={key}
@@ -71,8 +96,10 @@ export default function Options({
         marginRight: '5px'
       }}>
         <input style={{
-          width: '70px'
-        }} placeholder={definition.title}
+            width: '70px'
+          }}
+          type="text"
+          placeholder={definition.title}
           onChange={(event) => definition.action(
             context,
             event.target
@@ -95,6 +122,8 @@ export default function Options({
       return constructRadio(definition, key);
     else if (definition.type === 'number')
       return constructNumber(definition, key);
+    else if (definition.type === 'button')
+      return constructButton(definition, key);
   }
     
   return (<div style={style} {...props} >

@@ -3,13 +3,12 @@
 package com.example.springapp.dumpanalyzer.data;
 
 import com.example.springapp.dumpanalyzer.config.AppConfiguration;
+import com.example.springapp.dumpanalyzer.data.filter.Filter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.time.Duration;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -215,6 +214,41 @@ public class ProcessOrchestrator {
     );
   }
   
+  public String getProcessedType(
+    String file,
+    String type,
+    String mode,
+    Filter filter
+  ) {
+    if (mode.equals("text"))
+      return type;
+    
+    return new StringBuilder(type)
+      .append("/")
+      .append(file)
+      .append(".cached")
+      .toString();
+  }
+  
+  public String getProcessedFileName(
+    String file,
+    String type,
+    String mode,
+    Filter filter
+  ) {
+    if (mode.equals("text"))
+      return file;
+    
+    return new StringBuilder(file)
+      .append(".")
+      .append(mode)
+      .append(
+        filter.descriptor()
+      )
+      .append(".json")
+      .toString();
+  }
+  
   public String getProcessedType(String file, String type, String mode) {
     if (mode.equals("text"))
       return type;
@@ -237,10 +271,21 @@ public class ProcessOrchestrator {
       .toString();
   }
   
-  public String view(String file, String type, String mode)
+  public String view(String file, String type, String mode, Filter filter)
   throws IOException {
-    String processedFileName = getProcessedFileName(file, type, mode);
-    String processedType = getProcessedType(file, type, mode);
+    String processedFileName = getProcessedFileName(
+      file,
+      type,
+      mode,
+      filter
+    );
+    
+    String processedType = getProcessedType(
+      file,
+      type,
+      mode,
+      filter
+    );
     
     if (!fileManager.dirExists(type))
       throw new NoSuchFileException(
@@ -257,7 +302,12 @@ public class ProcessOrchestrator {
       if (!fileManager.dirExists(processedType))
         fileManager.mkdir(processedType);
       
-      Future<Void> processing = processFile(file, type, mode);
+      Future<Void> processing = processFile(
+        file,
+        type,
+        mode,
+        filter
+      );
       
       try {
         processing.get();
@@ -268,6 +318,11 @@ public class ProcessOrchestrator {
       }
       return fileManager.view(processedFileName, processedType);
     }
+  }
+  
+  public String view(String file, String type, String mode)
+  throws IOException {
+    return view(file, type, mode, Filter.NONE);
   }
   
 //  TODO
@@ -304,7 +359,12 @@ public class ProcessOrchestrator {
 //    }
 //  }
   
-  private Future<Void> processFile(String file, String type, String mode)
+  private Future<Void> processFile(
+    String file,
+    String type,
+    String mode,
+    Filter filter
+  )
   throws IOException {
     String processedFileName = getProcessedFileName(file, type, mode);
     String processedType = getProcessedType(file, type, mode);
@@ -312,6 +372,8 @@ public class ProcessOrchestrator {
     Future<Void> processing;
 
     ManagedFile managedFile;
+    
+    String stateString = mode + "/" + filter.descriptor();
     
     synchronized(managedFiles) {
       if (
@@ -321,9 +383,10 @@ public class ProcessOrchestrator {
 
         if (
           filesInProcessing.contains(managedFile)
-          && managedFile.hasSavedState(mode)
+          // && managedFile.hasSavedState(mode)
+          && managedFile.hasSavedState(stateString)
         )
-          return  managedFile.getState(mode);
+          return  managedFile.getState(stateString);
       }
     
       managedFile = manageFile(file, type);
@@ -338,10 +401,11 @@ public class ProcessOrchestrator {
           processedType
         ),
         type,
-        mode
+        mode,
+        filter
       );
 
-      managedFile.saveState(mode, processing);
+      managedFile.saveState(stateString, processing);
       
       filesInProcessing.add(
         managedFile
@@ -355,6 +419,7 @@ public class ProcessOrchestrator {
     String file,
     String type,
     String mode,
+    Filter filter,
     InputStream data
   )
   throws IOException {
@@ -387,7 +452,8 @@ public class ProcessOrchestrator {
           processedType
         ),
         type,
-        mode
+        mode,
+        filter
       );
 
       managedFile.saveState(mode, processing);

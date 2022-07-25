@@ -8,7 +8,6 @@ export default {
           id: 'full',
           title: 'весь документ',
           action: (context) => {
-            console.log('full');
             context.setOption('filter', 'full');
           }
         },
@@ -36,7 +35,7 @@ export default {
       ]
     },
     {
-      id: 'from',
+      id: 'filterFrom',
       title: 'от',
       type: 'number',
       isShown: context => {
@@ -51,13 +50,11 @@ export default {
         );
       },
       action: (context, value) => {
-        console.log(value);
-        console.log('from is ' + value)
-        context.setOption('from', value);
+        context.setOption('filterFrom', value);
       }
     },
     {
-      id: 'to',
+      id: 'filterTo',
       title: 'до',
       type: 'number',
       isShown: context => {
@@ -72,9 +69,16 @@ export default {
         );
       },
       action: (context, value) => {
-        console.log(value);
-        console.log('to is ' + value)
-        context.setOption('to', value);
+        context.setOption('filterTo', value);
+      }
+    },
+    {
+      id: 'applyFilter',
+      title: 'применить',
+      type: 'button',
+      isShown: () => true,
+      action: (context) => {
+        context.apply();
       }
     }
   ]

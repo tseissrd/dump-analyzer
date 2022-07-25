@@ -25,7 +25,8 @@ export default function LongMenu({
   
   const optionsStyle = {
     width: '200px',
-    height: '112px',
+    // height: '112px',
+    height: '160px',
     display: 'block',
     overflowY: 'scroll',
     marginLeft: 'auto',
@@ -44,7 +45,8 @@ export default function LongMenu({
   const {
     setValue,
     getValue,
-    chosenTab
+    chosenTab,
+    applyFilter
   } = useContext();
   
   function setMode(mode) {
@@ -68,7 +70,8 @@ export default function LongMenu({
         }}>
           <h3>{title}</h3>
           <div style={{
-            height: '112px',
+            //height: '112px',
+            height: '160px',
             width: '100%'
           }}>
             <Tabs
@@ -82,7 +85,8 @@ export default function LongMenu({
               style={optionsStyle}
               useContext={() => ({
                 setOption,
-                getOption
+                getOption,
+                apply: applyFilter
               })}
             />
           </div>

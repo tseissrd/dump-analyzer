@@ -2,6 +2,8 @@
  */
 package com.example.springapp.dumpanalyzer.data.processor;
 
+import com.example.springapp.dumpanalyzer.data.filter.Filter;
+import com.example.springapp.dumpanalyzer.data.filter.Filter.FilterMode;
 import com.example.springapp.dumpanalyzer.data.json.JsonOutputWriter;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,6 +11,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.time.Instant;
@@ -135,7 +138,8 @@ implements Processor {
   
   private void processCodeByTime(
     BufferedReader reader,
-    JsonOutputWriter writer
+    JsonOutputWriter writer,
+    Filter filter
   )
   throws IOException {
     String line;
@@ -290,7 +294,8 @@ implements Processor {
   
   private void processCodeBySource(
     BufferedReader reader,
-    JsonOutputWriter writer
+    JsonOutputWriter writer,
+    Filter filter
   )
   throws IOException {
     String line;
@@ -420,7 +425,8 @@ implements Processor {
     InputStream in,
     OutputStream out,
     String type,
-    String mode
+    String mode,
+    Filter filter
   ) {
     try (BufferedReader reader = new BufferedReader(
       new InputStreamReader(
@@ -428,6 +434,98 @@ implements Processor {
         Charset.forName("utf-8")
       )
     )) {
+      
+      BufferedReader filteredReader = new BufferedReader(reader) {
+        private boolean skippedToStart = false;
+        private long linesRead = 0;
+        
+        private void skipToStart()
+        throws IOException {
+          if (
+            filter.equals(
+              FilterMode.NONE
+            )
+          ) {
+            // nothing to do
+          } else if (
+            filter.equals(
+              FilterMode.TIME
+            )
+          ) {
+          } else if (
+            filter.equals(
+              FilterMode.LINES
+            )
+          ) {
+            long skipTo = -1;
+            
+            if (
+              nonNull(
+                filter.getStart()
+              )
+            ) {
+              skipTo = Long.parseLong(
+                filter.getStart()
+              );
+            }
+            
+            long filterEnd = -1;
+            
+            if (
+              nonNull(
+                filter.getEnd()
+              )
+            ) {
+              filterEnd = Long.parseLong(
+                filter.getEnd()
+              );
+            }
+            
+            if (
+              (skipTo > 0)
+              && (
+                (filterEnd == -1)
+                || (filterEnd >= skipTo)
+              )
+            ) {
+              for (long skipped = 0; skipped < skipTo; skipped += 1) {
+                if (
+                  nonNull(
+                    reader.readLine()
+                  )
+                )
+                reader.readLine();
+              }
+            }
+            
+            linesRead = skipTo;
+          } else if (
+            filter.equals(
+              FilterMode.PERCENT
+            )
+          ) {
+          }
+          
+          skippedToStart = true;
+        }
+        
+        private boolean checkEndFilter(String line) {
+        }
+        
+        @Override
+        public String readLine()
+        throws IOException {
+          if (!skippedToStart)
+            skipToStart();
+          
+          String line = super.readLine();
+          
+          checkEndFilter()
+          
+          linesRead += 1;
+        }
+      };
+      
       try (JsonOutputWriter writer = new JsonOutputWriter(
         new OutputStreamWriter(
           out,
@@ -436,13 +534,15 @@ implements Processor {
       )) {
         if (mode.equals("time")) {
           processCodeByTime(
-            reader,
-            writer
+            filteredReader,
+            writer,
+            filter
           );
         } else if (mode.equals("ip")) {
           processCodeBySource(
-            reader,
-            writer
+            filteredReader,
+            writer,
+            filter
           );
         }
       }
