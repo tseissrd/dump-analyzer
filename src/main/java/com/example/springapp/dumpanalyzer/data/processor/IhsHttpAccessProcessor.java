@@ -3,7 +3,6 @@
 package com.example.springapp.dumpanalyzer.data.processor;
 
 import com.example.springapp.dumpanalyzer.data.filter.Filter;
-import com.example.springapp.dumpanalyzer.data.filter.Filter.FilterMode;
 import com.example.springapp.dumpanalyzer.data.json.JsonOutputWriter;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,7 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
+import java.io.Writer;
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.time.Instant;
@@ -138,8 +137,7 @@ implements Processor {
   
   private void processCodeByTime(
     BufferedReader reader,
-    JsonOutputWriter writer,
-    Filter filter
+    JsonOutputWriter writer
   )
   throws IOException {
     String line;
@@ -294,8 +292,7 @@ implements Processor {
   
   private void processCodeBySource(
     BufferedReader reader,
-    JsonOutputWriter writer,
-    Filter filter
+    JsonOutputWriter writer
   )
   throws IOException {
     String line;
@@ -420,10 +417,6 @@ implements Processor {
     );
   }
   
-//  private BufferedReader getFilteredReader(BufferedReader in, Filter filter) {
-//    
-//  }
-  
   @Override
   public void process(
     InputStream in,
@@ -439,112 +432,39 @@ implements Processor {
       )
     )) {
       
-      BufferedReader filteredReader = new BufferedReader(reader) {
-        private boolean skippedToStart = false;
-        private long linesRead = 0;
-        
-        private void skipToStart()
-        throws IOException {
-          if (
-            filter.equals(
-              FilterMode.NONE
-            )
-          ) {
-            // nothing to do
-          } else if (
-            filter.equals(
-              FilterMode.TIME
-            )
-          ) {
-          } else if (
-            filter.equals(
-              FilterMode.LINES
-            )
-          ) {
-            long skipTo = -1;
-            
-            if (
-              nonNull(
-                filter.getStart()
-              )
-            ) {
-              skipTo = Long.parseLong(
-                filter.getStart()
-              );
-            }
-            
-            long filterEnd = -1;
-            
-            if (
-              nonNull(
-                filter.getEnd()
-              )
-            ) {
-              filterEnd = Long.parseLong(
-                filter.getEnd()
-              );
-            }
-            
-            if (
-              (skipTo > 0)
-              && (
-                (filterEnd == -1)
-                || (filterEnd >= skipTo)
-              )
-            ) {
-              for (long skipped = 0; skipped < skipTo; skipped += 1) {
-                if (
-                  nonNull(
-                    reader.readLine()
-                  )
-                )
-                reader.readLine();
-              }
-            }
-            
-            linesRead = skipTo;
-          } else if (
-            filter.equals(
-              FilterMode.PERCENT
-            )
-          ) {
-          }
-          
-          skippedToStart = true;
-        }
-        
-        @Override
-        public String readLine()
-        throws IOException {
-          if (!skippedToStart)
-            skipToStart();
-          
-          String line = super.readLine();
-          
-          checkEndFilter()
-          
-          linesRead += 1;
-        }
-      };
+      BufferedReader filteredReader = filter.filteredReader(reader);
       
-      try (JsonOutputWriter writer = new JsonOutputWriter(
-        new OutputStreamWriter(
+      try (
+        Writer rawWriter = new OutputStreamWriter(
           out,
           Charset.forName("utf-8")
+        );
+        JsonOutputWriter writer = new JsonOutputWriter(
+          rawWriter
         )
-      )) {
+      ) {
         if (mode.equals("time")) {
           processCodeByTime(
             filteredReader,
-            writer,
-            filter
+            writer
           );
         } else if (mode.equals("ip")) {
           processCodeBySource(
             filteredReader,
-            writer,
-            filter
+            writer
           );
+        } else if (mode.equals("text")) {
+          String line;
+          System.out.println("text mode");
+          
+          while (
+            nonNull(
+              line = filteredReader.readLine()
+            )
+          ) {
+            rawWriter.write(line);
+            rawWriter.write("\n");
+          }
         }
       }
     } catch (IOException ex) {

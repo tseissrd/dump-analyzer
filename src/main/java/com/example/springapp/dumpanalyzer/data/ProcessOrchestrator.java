@@ -220,7 +220,10 @@ public class ProcessOrchestrator {
     String mode,
     Filter filter
   ) {
-    if (mode.equals("text"))
+    if (
+      mode.equals("text")
+      && filter.equals(Filter.NOOP)
+    )
       return type;
     
     return new StringBuilder(type)
@@ -236,12 +239,16 @@ public class ProcessOrchestrator {
     String mode,
     Filter filter
   ) {
-    if (mode.equals("text"))
+    if (
+      mode.equals("text")
+      && filter.equals(Filter.NOOP)
+    )
       return file;
     
     return new StringBuilder(file)
       .append(".")
       .append(mode)
+      .append(".")
       .append(
         filter.descriptor()
       )
@@ -322,7 +329,7 @@ public class ProcessOrchestrator {
   
   public String view(String file, String type, String mode)
   throws IOException {
-    return view(file, type, mode, Filter.NONE);
+    return view(file, type, mode, Filter.NOOP);
   }
   
 //  TODO
@@ -366,8 +373,18 @@ public class ProcessOrchestrator {
     Filter filter
   )
   throws IOException {
-    String processedFileName = getProcessedFileName(file, type, mode);
-    String processedType = getProcessedType(file, type, mode);
+    String processedFileName = getProcessedFileName(
+      file,
+      type,
+      mode,
+      filter
+    );
+    String processedType = getProcessedType(
+      file,
+      type,
+      mode,
+      filter
+    );
     
     Future<Void> processing;
 

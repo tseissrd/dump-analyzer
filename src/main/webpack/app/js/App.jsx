@@ -12,7 +12,8 @@ export default function App(props) {
   const [settings, setSettings] = useState({
     type: 'ihs_http_access',
     file: null,
-    mode: 'default'
+    mode: 'default',
+    filter: 'none'
   });
   
   const [files, setFiles] = useState(null);

@@ -4,7 +4,7 @@ package com.example.springapp.dumpanalyzer;
 
 import com.example.springapp.dumpanalyzer.data.ProcessOrchestrator;
 import com.example.springapp.dumpanalyzer.data.filter.Filter;
-import com.example.springapp.dumpanalyzer.data.filter.Filter.FilterMode;
+import com.example.springapp.dumpanalyzer.data.filter.LinesFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -118,7 +118,7 @@ public class App {
           String file = (String)data.get("file");
           String mode = (String)data.get("mode");
           
-          FilterMode filterMode = FilterMode.NONE;
+          String filterMode = null;
           String filterFrom = null;
           String filterTo = null;
           
@@ -126,11 +126,10 @@ public class App {
             data.containsKey("filter")
           ) {
             try {
-              filterMode = FilterMode.valueOf(
-                (String)data.get("filterFrom")
-              );
+              filterMode = ((String)data.get("filter"))
+                .toUpperCase();
             } catch (Throwable ex) {
-              Logger.getLogger(App.class.getName()).log(Level.SEVERE, "exception when parsing \"filterFrom\"");
+              Logger.getLogger(App.class.getName()).log(Level.SEVERE, "exception when parsing \"filter\"");
               Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
             }
           }
@@ -150,14 +149,25 @@ public class App {
             data.containsKey("filterTo")
           ) {
             try {
-              filterFrom = (String)data.get("filterTo");
+              filterTo = (String)data.get("filterTo");
             } catch (Throwable ex) {
               Logger.getLogger(App.class.getName()).log(Level.SEVERE, "exception when parsing \"filterTo\"");
               Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
             }
           }
           
-          Filter filter = Filter.getInstance(filterMode, filterFrom, filterTo);
+          System.out.println(filterMode);
+          System.out.println(filterFrom);
+          System.out.println(filterTo);
+          
+          Filter filter = Filter.NOOP;
+          
+          if (
+            filterMode.equals(
+              LinesFilter.ID
+            )
+          )
+            filter = new LinesFilter(filterFrom, filterTo);
           
           return ServerResponse.ok()
             .contentType(APPLICATION_JSON)
