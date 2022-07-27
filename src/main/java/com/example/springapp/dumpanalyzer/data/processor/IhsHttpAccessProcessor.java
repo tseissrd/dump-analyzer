@@ -420,6 +420,10 @@ implements Processor {
     );
   }
   
+//  private BufferedReader getFilteredReader(BufferedReader in, Filter filter) {
+//    
+//  }
+  
   @Override
   public void process(
     InputStream in,
@@ -507,9 +511,6 @@ implements Processor {
           }
           
           skippedToStart = true;
-        }
-        
-        private boolean checkEndFilter(String line) {
         }
         
         @Override

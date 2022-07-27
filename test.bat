@@ -1,1 +1,0 @@
-javac -Xlint:unchecked -cp src\main\java src\main\java\com\example\springapp\dumpanalyzer\Test.java -d . && java com.example.springapp.dumpanalyzer.Test

@@ -1,1 +1,0 @@
-[Convert]::tobase64string([IO.File]::readallbytes("target\dumpanalyzer-1.0.0.war")) > data.txt
