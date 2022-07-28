@@ -32,6 +32,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessOrchestrator {
   
+  private final String TEXT_MODE = "text";
+  
   private final FileManager fileManager;
   private final ProcessorManager processorManager;
   private final Map<String, Map<String, ManagedFile>> managedFiles;
@@ -365,6 +367,26 @@ public class ProcessOrchestrator {
 //      return fileManager.view(processedFileName, processedType);
 //    }
 //  }
+  
+  public long countLines(String file, String type)
+  throws IOException {
+    String processedFileName = getProcessedFileName(
+      file,
+      type,
+      TEXT_MODE
+    );
+    
+    String processedFileType = getProcessedType(
+      file,
+      type,
+      TEXT_MODE
+    );
+    
+    return fileManager.countLines(
+      processedFileName,
+      processedFileType
+    );
+  }
   
   private Future<Void> processFile(
     String file,

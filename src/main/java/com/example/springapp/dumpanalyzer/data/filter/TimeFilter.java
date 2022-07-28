@@ -2,10 +2,12 @@
  */
 package com.example.springapp.dumpanalyzer.data.filter;
 
+import com.example.springapp.dumpanalyzer.data.processor.HttpAccessRecord;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.time.Instant;
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 /**
  *
@@ -53,69 +55,119 @@ implements Filter {
   
   @Override
   public String descriptor() {
-    return new StringBuilder(ID)
-      .append(".")
-      .append(from)
-      .append("-")
-      .append(to)
-      .toString();
+    StringBuilder descriptor = new StringBuilder(ID)
+      .append(".");
+    
+    if (
+      nonNull(from)
+    ) {
+      descriptor.append(
+        from.toString()
+          .replace(':', '_')
+      );
+    } else {
+      descriptor.append("ANY");
+    }
+    
+    descriptor.append("-");
+    
+    if (
+      nonNull(to)
+    ) {
+      descriptor.append(
+        to.toString()
+          .replace(':', '_')
+      );
+    } else {
+      descriptor.append("ANY");
+    }
+    
+    return descriptor.toString();
   }
 
   private boolean checkForEnd(String line) {
-    if (to < 0)
+    if (
+      isNull(to)
+    )
       return false;
 
+    HttpAccessRecord record;
+    
+    try {
+      record = new HttpAccessRecord(line);
+    } catch (Throwable ex) {
+      return false;
+    }
+    
     if (
-      linesRead > to
+      record.getDate()
+        .compareTo(to) > 0
     )
       return true;
     else
       return false;
   }
   
-  private long skipToStart(BufferedReader in)
+  private String skipToStart(BufferedReader in)
   throws IOException {
-    if (from < 0)
-      return 0;
-
-    for (long skipped = 0; skipped < from; skipped += 1) {
-      System.out.println("skipped " + skipped);
-      if (
-        isNull(
-          in.readLine()
-        )
-      ) {
-        return skipped;
-      }
-    }
+    if (
+      isNull(
+        from
+      )
+    )
+      return in.readLine();
     
-    return from;
+    HttpAccessRecord record;
+    String line = null;
+
+    while(
+      nonNull(
+        line = in.readLine()
+      )
+    ) {
+      record = new HttpAccessRecord(line);
+      
+      if (
+        record.getDate()
+          .compareTo(from) >= 0
+      ) {
+        break;
+      }
+    }  
+    
+    return line;
   }
   
   @Override
   public BufferedReader filteredReader(BufferedReader in) {
     return new BufferedReader(in) {
       private boolean skippedToStart = false;
-      private long linesRead = 0;
 
       @Override
       public String readLine()
       throws IOException {
+        String line = null;
+        
         if (!skippedToStart) {
-          linesRead = skipToStart(in);
+          line = skipToStart(in);
           skippedToStart = true;
+          
+          if (
+            isNull(
+              line
+            )
+          )
+            return null;
         }
-        
-        System.out.println(descriptor());
 
-        String line = super.readLine();
+        if (
+          isNull(line)
+        )
+          line = super.readLine();
 
-        if (checkForEnd(linesRead))
+        if (checkForEnd(line))
           return null;
-        
-        System.out.println("checked");
 
-        linesRead += 1;
         return line;
       }
     };

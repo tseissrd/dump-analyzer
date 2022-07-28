@@ -45,96 +45,6 @@ implements Processor {
     return singleton;
   }
   
-  private static final Pattern ACCESS_LOG_REGEXP 
-//    = Pattern.compile("^([0-9.]+)[^\\[]+\\[([^\\]]+)\\]\\s\"[^\"]+\"\\s([0-9]+).*$");
-    = Pattern.compile("^([0-9.]++)[^\\[]++\\[([^\\]]++)\\]\\s\"(?:\\\\\"|[^\"])++\"\\s([0-9]++).*+$");
-  
-  private static final Pattern DATE_REGEXP
-    = Pattern.compile("^([0-9]++)/([a-zA-Z]++)/([0-9]++):([0-9]++):([0-9]++):([0-9]++)\\s([+-])([0-9]++)$");
-
-  private String parseMonth(String month) {
-    if (month.equals("Jan")) {
-      return "01";
-    } else if (month.equals("Feb")) {
-      return "02";
-    } else if (month.equals("Mar")) {
-      return "03";
-    } else if (month.equals("Apr")) {
-      return "04";
-    } else if (month.equals("May")) {
-      return "05";
-    } else if (month.equals("Jun")) {
-      return "06";
-    } else if (month.equals("Jul")) {
-      return "07";
-    } else if (month.equals("Aug")) {
-      return "08";
-    } else if (month.equals("Sep")) {
-      return "09";
-    } else if (month.equals("Oct")) {
-      return "10";
-    } else if (month.equals("Nov")) {
-      return "11";
-    } else if (month.equals("Dec")) {
-      return "12";
-    } else {
-      return "00";
-    }
-  }
-  
-  private Instant parseDate(String httpDate) {
-    Matcher matcher = DATE_REGEXP.matcher(httpDate);
-    matcher.matches();
-    String isoDate = new StringBuilder(
-        matcher.group(3)
-      ).append("-")
-      .append(
-        parseMonth(
-          matcher.group(2)
-        )
-      )
-      .append("-")
-      .append(matcher.group(1))
-      .append("T")
-      .append(matcher.group(4))
-      .append(":")
-      .append(matcher.group(5))
-      .append(":")
-      .append(matcher.group(6))
-      .append(".000Z")
-      .toString();
-    
-    Instant date = Instant.parse(isoDate);
-    
-    Duration offset = Duration.ofHours(
-        Long.parseLong(
-          matcher.group(8)
-            .substring(0, 2)
-        )
-      ).plus(
-        Duration.ofMinutes(
-          Long.parseLong(
-            matcher.group(8)
-              .substring(2)
-          )
-        )
-      );
-    
-    if (
-      matcher.group(7)
-        .equals("-")
-    ) {
-      date = date.plus(offset);
-    } else if (
-      matcher.group(7)
-        .equals("+")
-    ) {
-      date = date.minus(offset);
-    }
-    
-    return date;
-  }
-  
   private void processCodeByTime(
     BufferedReader reader,
     JsonOutputWriter writer
@@ -142,7 +52,6 @@ implements Processor {
   throws IOException {
     String line;
         
-    String dateString;
     String date;
     short code;
     String codeString;
@@ -165,12 +74,15 @@ implements Processor {
 
     while ((line = reader.readLine()) != null) {
       try {
+        HttpAccessRecord record = new HttpAccessRecord(line);
+        date = record.getDate()
+          .truncatedTo(
+            ChronoUnit.MINUTES
+          )
+          .toString();
         
-        Matcher matcher = ACCESS_LOG_REGEXP.matcher(line);
-        matcher.matches();
-        dateString = matcher.group(2);
-        codeString = matcher.group(3);
-        code = Short.parseShort(codeString);
+        code = record.getCode();
+        codeString = Short.toString(code);
 
         if (!tableHeaders.contains(
           codeString
@@ -179,13 +91,6 @@ implements Processor {
             codeString
           );
         }
-
-        date = parseDate(dateString)
-          .truncatedTo(
-            ChronoUnit.MINUTES
-          )
-          .toString();
-      
 
         if (
           nonNull(lastDate)
@@ -316,12 +221,11 @@ implements Processor {
 
     while ((line = reader.readLine()) != null) {
       try {
+        HttpAccessRecord record = new HttpAccessRecord(line);
         
-        Matcher matcher = ACCESS_LOG_REGEXP.matcher(line);
-        matcher.matches();
-        source = matcher.group(1);
-        codeString = matcher.group(3);
-        code = Short.parseShort(codeString);
+        code = record.getCode();
+        codeString = Short.toString(code);
+        source = record.getSource();
 
         if (!tableHeaders.contains(
           codeString
@@ -455,7 +359,6 @@ implements Processor {
           );
         } else if (mode.equals("text")) {
           String line;
-          System.out.println("text mode");
           
           while (
             nonNull(

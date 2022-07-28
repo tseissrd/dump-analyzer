@@ -5,6 +5,8 @@ package com.example.springapp.dumpanalyzer;
 import com.example.springapp.dumpanalyzer.data.ProcessOrchestrator;
 import com.example.springapp.dumpanalyzer.data.filter.Filter;
 import com.example.springapp.dumpanalyzer.data.filter.LinesFilter;
+import com.example.springapp.dumpanalyzer.data.filter.PercentFilter;
+import com.example.springapp.dumpanalyzer.data.filter.TimeFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -13,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import static java.util.Objects.nonNull;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.Part;
@@ -156,18 +159,32 @@ public class App {
             }
           }
           
-          System.out.println(filterMode);
-          System.out.println(filterFrom);
-          System.out.println(filterTo);
-          
           Filter filter = Filter.NOOP;
           
           if (
-            filterMode.equals(
-              LinesFilter.ID
-            )
-          )
-            filter = new LinesFilter(filterFrom, filterTo);
+            nonNull(filterMode)
+          ) {
+            if (
+              filterMode.equals(
+                LinesFilter.ID
+              )
+            ) {
+              filter = new LinesFilter(filterFrom, filterTo);
+            } else if (
+              filterMode.equals(
+                TimeFilter.ID
+              )
+            ) {
+              filter = new TimeFilter(filterFrom, filterTo);
+            } else if (
+              filterMode.equals(
+                PercentFilter.ID
+              )
+            ) {
+              long linesTotal = orchestrator.countLines(file, type);
+              filter = new PercentFilter(filterFrom, filterTo, linesTotal);
+            }
+          }          
           
           return ServerResponse.ok()
             .contentType(APPLICATION_JSON)

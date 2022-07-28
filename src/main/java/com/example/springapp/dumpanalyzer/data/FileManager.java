@@ -6,6 +6,7 @@ import com.example.springapp.dumpanalyzer.config.AppConfiguration;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.file.FileSystem;
@@ -13,6 +14,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import static java.util.Objects.nonNull;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -204,6 +206,30 @@ public class FileManager {
     Path path = pathFor(type);
     
     rmdir(path);
+  }
+  
+  public long countLines(String file, String type)
+  throws IOException {
+    Path path = pathFor(file, type);
+        
+    if (!Files.exists(path))
+      throw new IOException("No such file: " + path);
+    
+    long linesCount = 0;
+        
+    try(BufferedReader contents = Files.newBufferedReader(
+      path,
+      Charset.forName("utf-8")
+    )) {
+      while (
+        nonNull(
+          contents.readLine()
+        )
+      )
+        linesCount += 1;
+    }
+        
+    return linesCount;
   }
   
 }

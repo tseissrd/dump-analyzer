@@ -65,7 +65,7 @@ implements Filter {
       return false;
 
     if (
-      linesRead > to
+      linesRead >= to
     )
       return true;
     else
@@ -76,9 +76,10 @@ implements Filter {
   throws IOException {
     if (from < 0)
       return 0;
+    
+    long skipToLine = Math.max(from - 1, 0);
 
-    for (long skipped = 0; skipped < from; skipped += 1) {
-      System.out.println("skipped " + skipped);
+    for (long skipped = 0; skipped < skipToLine; skipped += 1) {
       if (
         isNull(
           in.readLine()
@@ -88,7 +89,7 @@ implements Filter {
       }
     }
     
-    return from;
+    return skipToLine;
   }
   
   @Override
@@ -105,15 +106,11 @@ implements Filter {
           skippedToStart = true;
         }
         
-        System.out.println(descriptor());
-
         String line = super.readLine();
 
         if (checkForEnd(linesRead))
           return null;
         
-        System.out.println("checked");
-
         linesRead += 1;
         return line;
       }
